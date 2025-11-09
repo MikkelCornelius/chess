@@ -1,4 +1,5 @@
 import pygame
+import ctypes
 
 # TODO: Implement check, checkmate, stalemate, promotion
 
@@ -19,8 +20,23 @@ board = [['bR', 'bN', 'bB', 'bQ', 'bK', 'bB', 'bN', 'bR'],
          ['..', '..', '..', '..', '..', '..', '..', '..'],
          ['wP', 'wP', 'wP', 'wP', 'wP', 'wP', 'wP', 'wP'],
          ['wR', 'wN', 'wB', 'wQ', 'wK', 'wB', 'wN', 'wR']]
+board_encoder = {'bR': 'r', 'bN': 'n', 'bB': 'b', 'bQ': 'q', 'bK': 'k', 'bP': 'p',
+                 'wR': 'R', 'wN': 'N', 'wB': 'B', 'wQ': 'Q', 'wK': 'K', 'wP': 'P',
+                 '..': ' '}
+board_encoded = ""
+
+# Board coordinates
+col_indices = {'a': 0, 'b': 1, 'c': 2, 'd': 3, 'e': 4, 'f': 5, 'g': 6, 'h': 7}
+row_indices = {'1': 7, '2': 6, '3': 5, '4': 4, '5': 3, '6': 2, '7': 1, '8': 0}
 
 # Functions
+def encode_board() -> str:
+    encoded = ""
+    for row in board:
+        for piece in row:
+            encoded += board_encoder[piece]
+    return encoded+current_player
+
 def highlight(selected_tile: tuple):
     rect = pygame.Rect(selected_tile[1] * TILE_SIZE, selected_tile[0] * TILE_SIZE, TILE_SIZE, TILE_SIZE)
     overlay = pygame.Surface((TILE_SIZE, TILE_SIZE), pygame.SRCALPHA)
@@ -157,6 +173,14 @@ def legal_move(from_tile: tuple, to_tile: tuple) -> bool:
 def move_piece(from_tile: tuple, to_tile: tuple):
     global w_long_castle_legal, w_short_castle_legal, b_long_castle_legal, b_short_castle_legal, b_en_passant_legal, w_en_passant_legal, en_passant
     
+    # Handle pawn promotion
+    if board[from_tile[0]][from_tile[1]] == 'wP':
+        if to_tile[0] == 0:
+            board[from_tile[0]][from_tile[1]] = 'wQ'  # Promote to queen
+    elif board[from_tile[0]][from_tile[1]] == 'bP':
+        if to_tile[0] == 7:
+            board[from_tile[0]][from_tile[1]] = 'bQ'  # Promote to queen
+
     # Handle en passant capture
     if en_passant:
         if board[from_tile[0]][from_tile[1]][0] == 'w': #white pawn moved
@@ -225,6 +249,11 @@ w_en_passant_legal = 8 #8 out of bounds means not legal
 b_en_passant_legal = 8
 en_passant = False
 
+# Load bot
+bot = ctypes.CDLL('./chessbot.dll')
+bot.get_move.restype = ctypes.c_char_p
+bot.get_move.argtypes = [ctypes.c_char_p]
+
 # Initialize Pygame
 pygame.init()
 
@@ -254,10 +283,10 @@ for row in range(8):
 def draw_board():
     for row in range(8):
         for col in range(8):
+            rect = pygame.Rect(col * TILE_SIZE, row * TILE_SIZE, TILE_SIZE, TILE_SIZE)
+            color = LIGHT if (row + col) % 2 == 0 else DARK
+            pygame.draw.rect(screen, color, rect)
             if board[row][col] != '..':
-                rect = pygame.Rect(col * TILE_SIZE, row * TILE_SIZE, TILE_SIZE, TILE_SIZE)
-                color = LIGHT if (row + col) % 2 == 0 else DARK
-                pygame.draw.rect(screen, color, rect)
                 screen.blit(piece_images[board[row][col]], rect.topleft)
     pygame.display.flip()
 draw_board()
@@ -273,6 +302,14 @@ while running:
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 running = False
+            elif event.key == pygame.K_SPACE:
+                #make bot move
+                bot_move = bot.get_move(encode_board().encode()).decode('utf-8')
+                print("Bot move:", bot_move)
+                from_pos = (row_indices[bot_move[1]], col_indices[bot_move[0]])
+                to_pos = (row_indices[bot_move[3]], col_indices[bot_move[2]])
+                move_piece(from_pos, to_pos)
+                draw_board()
 
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
