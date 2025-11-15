@@ -1,62 +1,108 @@
 #include <string>
 #include <forward_list>
-#include <unordered_map>
-#include <iostream>
+#include <vector>
+#include <memory>
+
+using namespace std;
 
 // compile with: g++ -shared -fPIC -o chessbot.dll chess_bot.cpp
-
-// TODO: evaluate board, find all legal continuations, determine depth, find best continuation
-
-/*evaluate board:
-so far simple material count is used. Should be improved later
-
-legal continuations: (potential bug might be fixed: Bishop if statement breaks if out of bounds)
-each continuation should create its own 'board'. A board should contain an array pointing to all boards that are direct continuations of said board, and each board should also contain a pointer to the board this board is a continuation from
-
-determine depth:
-How far we look, when searching for the best continuation. It can be a constant for starters, but should later be evaluated from the position
-
-find best continuation:
-When we have a tree, with some depth, of all continuations, we should evaluate the position on all leaf boards, from there go up until we reach the root*/
 
 constexpr char col_indeces[8] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'};
 constexpr char row_indeces[8] = {'8', '7', '6', '5', '4', '3', '2', '1'};
 
-/*old implementation of col and row indeces
-std::unordered_map<int, std::string> col_indeces = {
-    {0, "a"}, {1, "b"}, {2, "c"}, {3, "d"},
-    {4, "e"}, {5, "f"}, {6, "g"}, {7, "h"}
-};
-
-std::unordered_map<int, std::string> row_indeces = {
-    {0, "8"}, {1, "7"}, {2, "6"}, {3, "5"},
-    {4, "4"}, {5, "3"}, {6, "2"}, {7, "1"}
-};*/
-
-std::string white_pieces = "PNBRQK";
-std::string black_pieces = "pnbrqk";
+string white_pieces = "PNBRQK";
+string black_pieces = "pnbrqk";
 int knight_moves[8][2] = {{-2, -1}, {-2, 1}, {-1, -2}, {-1, 2},
                             {1, -2}, {1, 2}, {2, -1}, {2, 1}};
 
-/*extern "C" const char* get_move(const char* board_str) {
-    Board board(board_str);
-
-    return "e2e4";
-}*/
-
 class Board {
     private:
-    char squares[8][8];  // simple 8x8 board, use 'P', 'p', 'R', etc.
+    char squares[8][8];
+    string previous_move;
+    string best_continuation;
     bool white_to_move;
     double eval;
-    std::forward_list<std::string> continuations;
+    forward_list<string> continuations;
+    int num_continuations = 0;
 
     public:
-    Board(const char* board_str) {
+    Board(const char* init_squares, const string& previous_move, bool init_white_to_move, int depth) {
         for (int i = 0; i < 8; ++i)
             for (int j = 0; j < 8; ++j)
-                squares[i][j] = board_str[i*8 + j];
-        white_to_move = board_str[64]=='w';
+                squares[i][j] = init_squares[i*8 + j];
+        this->previous_move = previous_move;
+        this->best_continuation = previous_move;
+        this->white_to_move = init_white_to_move;
+
+        if (depth > 1) {
+            evaluate(); //write what to do later
+        } else if (depth == 1) {
+            this->generate_legal_moves();
+
+
+            // Create array of pointers to boards
+            vector<unique_ptr<Board>> boards;
+            int length = static_cast<int>(distance(continuations.begin(), continuations.end()));
+            boards.reserve(length);
+
+            // Create all boards and store pointers
+            int i = 0;
+            for (const string& current_move : continuations) {
+                char* buf = move(current_move);
+                boards.emplace_back(make_unique<Board>(buf, current_move, !white_to_move, depth-1));
+                delete [] buf;
+
+                boards.back()->evaluate(); //evaluate boards of depth 0
+                i++;
+            }
+
+            // Find best continuation
+            double board_eval;
+            bool first_child = true; //always run *if block* in first iteration to initialize eval
+            if (white_to_move) {
+                for (const auto& board : boards) {
+                    board_eval = board->get_evaluation();
+                    if (first_child) {
+                        this->eval = board_eval;
+                        this->best_continuation = board->get_best_continuation();
+                        first_child = false;
+                    } else if (board_eval > this->eval) {
+                        this->eval = board_eval;
+                        this->best_continuation = board->get_best_continuation();
+                    }
+                }
+            } else {
+                for (const auto& board : boards) {
+                    board_eval = board->get_evaluation();
+                    if (first_child) {
+                        this->eval = board_eval;
+                        this->best_continuation = board->get_best_continuation();
+                        first_child = false;
+                    } else if (board_eval < this->eval) {
+                        this->eval = board_eval;
+                        this->best_continuation = board->get_best_continuation();
+                    }
+                }
+            }
+        }
+    }
+
+    char* move(string current_move) {
+        // Create copy of board
+        char* new_board = new char[64];
+        for (int i = 0; i < 8; ++i)
+            for (int j = 0; j < 8; ++j)
+                new_board[i*8 + j] = squares[i][j];
+        
+        // Execute move on new_board using ASCII subtraction
+        int from_col = current_move[0] - 'a';
+        int from_row = '8' - current_move[1];
+        int to_col = current_move[2] - 'a';
+        int to_row = '8' - current_move[3];
+        new_board[to_row * 8 + to_col] = new_board[from_row * 8 + from_col];
+        new_board[from_row * 8 + from_col] = ' ';
+        
+        return new_board;
     }
 
     void evaluate() {
@@ -108,9 +154,8 @@ class Board {
                             int dest_i = i + move[0];
                             int dest_j = j + move[1];
                             //looping through all 8 knight moves
-
                             if (dest_i >= 0 && dest_i < 8 && dest_j >= 0 && dest_j < 8) {
-                                if (squares[dest_i][dest_j] == ' ' || black_pieces.find(squares[dest_i][dest_j]) != std::string::npos) { //add legal move if destination is empty or has opponent piece
+                                if (squares[dest_i][dest_j] == ' ' || black_pieces.find(squares[dest_i][dest_j]) != string::npos) { //add legal move if destination is empty or has opponent piece
                                     continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[dest_j], row_indeces[dest_i]});
                                 }
                             }
@@ -126,28 +171,28 @@ class Board {
                         while (k >= 0 && squares[k][j] == ' ') { //create legal move until blocked
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[j], row_indeces[k]});
                             --k;}
-                        if (black_pieces.find(squares[k][j]) != std::string::npos) { //if opponent piece, add one more move
+                        if (k >= 0 && black_pieces.find(squares[k][j]) != string::npos) { //if opponent piece, add one more move (and check whether still in bound)
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[j], row_indeces[k]});
                         }
                         k = i+1;
                         while (k < 8 && squares[k][j] == ' ') { //do the same in other direction
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[j], row_indeces[k]});
                             ++k;}
-                        if (black_pieces.find(squares[k][j]) != std::string::npos) {
+                        if (k < 8 && black_pieces.find(squares[k][j]) != string::npos) {
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[j], row_indeces[k]});
                         }
                         k = j-1;
                         while (k >= 0 && squares[i][k] == ' ') {
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[k], row_indeces[i]});
                             --k;}
-                        if (black_pieces.find(squares[i][k]) != std::string::npos) {
+                        if (k >= 0 && black_pieces.find(squares[i][k]) != string::npos) {
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[k], row_indeces[i]});
                         }
                         k = j+1;
                         while (k < 8 && squares[i][k] == ' ') {
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[k], row_indeces[i]});
                             ++k;}
-                        if (black_pieces.find(squares[i][k]) != std::string::npos) {
+                        if (k < 8 && black_pieces.find(squares[i][k]) != string::npos) {
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[k], row_indeces[i]});
                         }
                         if (piece != 'Q') break;  // Create fall through for queen
@@ -158,28 +203,28 @@ class Board {
                         while (ki >= 0 && kj >= 0 && squares[ki][kj] == ' ') { //create legal move until blocked
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[kj], row_indeces[ki]});
                             --ki; --kj;}
-                        if (ki >= 0 && kj >= 0 && black_pieces.find(squares[ki][kj]) != std::string::npos) { //if opponent piece, add one more move (and check whether still in bound)
+                        if (ki >= 0 && kj >= 0 && black_pieces.find(squares[ki][kj]) != string::npos) { //if opponent piece, add one more move (and check whether still in bound)
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[kj], row_indeces[ki]});
                         }
                         ki = i-1; kj = j+1;
                         while (ki >= 0 && kj < 8 && squares[ki][kj] == ' ') { //do the same in other direction
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[kj], row_indeces[ki]});
                             --ki; ++kj;}
-                        if (black_pieces.find(squares[ki][kj]) != std::string::npos) {
+                        if (ki >= 0 && kj < 8 && black_pieces.find(squares[ki][kj]) != string::npos) {
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[kj], row_indeces[ki]});
                         }
                         ki = i+1; kj = j-1;
                         while (ki < 8 && kj >= 0 && squares[ki][kj] == ' ') {
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[kj], row_indeces[ki]});
                             ++ki; --kj;}
-                        if (black_pieces.find(squares[ki][kj]) != std::string::npos) {
+                        if (ki < 8 && kj >= 0 && black_pieces.find(squares[ki][kj]) != string::npos) {
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[kj], row_indeces[ki]});
                         }
                         ki = i+1; kj = j+1;
                         while (ki < 8 && kj < 8 && squares[ki][kj] == ' ') {
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[kj], row_indeces[ki]});
                             ++ki; ++kj;}
-                        if (black_pieces.find(squares[ki][kj]) != std::string::npos) {
+                        if (ki < 8 && kj < 8 && black_pieces.find(squares[ki][kj]) != string::npos) {
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[kj], row_indeces[ki]});
                         }
                         break;
@@ -192,7 +237,7 @@ class Board {
                                 int dest_i = i + di;
                                 int dest_j = j + dj;
                                 if (dest_i >= 0 && dest_i < 8 && dest_j >= 0 && dest_j < 8) {
-                                    if (squares[dest_i][dest_j] == ' ' || black_pieces.find(squares[dest_i][dest_j]) != std::string::npos) {
+                                    if (squares[dest_i][dest_j] == ' ' || black_pieces.find(squares[dest_i][dest_j]) != string::npos) {
                                         continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[dest_j], row_indeces[dest_i]});
                                     }
                                 }
@@ -223,13 +268,13 @@ class Board {
                         // captures
                         if (i+1 < 8 && j-1 >= 0) {
                             char target = squares[i+1][j-1];
-                            if (white_pieces.find(target) != std::string::npos) {
+                            if (white_pieces.find(target) != string::npos) {
                                 continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[j-1], row_indeces[i+1]});
                             }
                         }
                         if (i+1 < 8 && j+1 < 8) {
                             char target = squares[i+1][j+1];
-                            if (white_pieces.find(target) != std::string::npos) {
+                            if (white_pieces.find(target) != string::npos) {
                                 continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[j+1], row_indeces[i+1]});
                             }
                         }
@@ -240,7 +285,7 @@ class Board {
                             int dest_i = i + move[0];
                             int dest_j = j + move[1];
                             if (dest_i >= 0 && dest_i < 8 && dest_j >= 0 && dest_j < 8) {
-                                if (squares[dest_i][dest_j] == ' ' || white_pieces.find(squares[dest_i][dest_j]) != std::string::npos) {
+                                if (squares[dest_i][dest_j] == ' ' || white_pieces.find(squares[dest_i][dest_j]) != string::npos) {
                                     continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[dest_j], row_indeces[dest_i]});
                                 }
                             }
@@ -256,7 +301,7 @@ class Board {
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[j], row_indeces[k]});
                             --k;
                         }
-                        if (k >= 0 && k < 8 && white_pieces.find(squares[k][j]) != std::string::npos) {
+                        if (k >= 0 && k < 8 && white_pieces.find(squares[k][j]) != string::npos) {
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[j], row_indeces[k]});
                         }
                         k = i+1;
@@ -264,7 +309,7 @@ class Board {
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[j], row_indeces[k]});
                             ++k;
                         }
-                        if (k >= 0 && k < 8 && white_pieces.find(squares[k][j]) != std::string::npos) {
+                        if (k >= 0 && k < 8 && white_pieces.find(squares[k][j]) != string::npos) {
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[j], row_indeces[k]});
                         }
                         k = j-1;
@@ -272,7 +317,7 @@ class Board {
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[k], row_indeces[i]});
                             --k;
                         }
-                        if (k >= 0 && k < 8 && white_pieces.find(squares[i][k]) != std::string::npos) {
+                        if (k >= 0 && k < 8 && white_pieces.find(squares[i][k]) != string::npos) {
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[k], row_indeces[i]});
                         }
                         k = j+1;
@@ -280,7 +325,7 @@ class Board {
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[k], row_indeces[i]});
                             ++k;
                         }
-                        if (k >= 0 && k < 8 && white_pieces.find(squares[i][k]) != std::string::npos) {
+                        if (k >= 0 && k < 8 && white_pieces.find(squares[i][k]) != string::npos) {
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[k], row_indeces[i]});
                         }
                         if (piece != 'q') break; // fall through for queen
@@ -292,7 +337,7 @@ class Board {
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[kj], row_indeces[ki]});
                             --ki; --kj;
                         }
-                        if (ki >= 0 && kj >= 0 && ki < 8 && kj < 8 && white_pieces.find(squares[ki][kj]) != std::string::npos) {
+                        if (ki >= 0 && kj >= 0 && white_pieces.find(squares[ki][kj]) != string::npos) {
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[kj], row_indeces[ki]});
                         }
                         ki = i-1; kj = j+1;
@@ -300,7 +345,7 @@ class Board {
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[kj], row_indeces[ki]});
                             --ki; ++kj;
                         }
-                        if (ki >= 0 && kj >= 0 && ki < 8 && kj < 8 && white_pieces.find(squares[ki][kj]) != std::string::npos) {
+                        if (ki >= 0 && kj < 8 && white_pieces.find(squares[ki][kj]) != string::npos) {
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[kj], row_indeces[ki]});
                         }
                         ki = i+1; kj = j-1;
@@ -308,7 +353,7 @@ class Board {
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[kj], row_indeces[ki]});
                             ++ki; --kj;
                         }
-                        if (ki >= 0 && kj >= 0 && ki < 8 && kj < 8 && white_pieces.find(squares[ki][kj]) != std::string::npos) {
+                        if (kj >= 0 && ki < 8 && white_pieces.find(squares[ki][kj]) != string::npos) {
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[kj], row_indeces[ki]});
                         }
                         ki = i+1; kj = j+1;
@@ -316,7 +361,7 @@ class Board {
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[kj], row_indeces[ki]});
                             ++ki; ++kj;
                         }
-                        if (ki >= 0 && kj >= 0 && ki < 8 && kj < 8 && white_pieces.find(squares[ki][kj]) != std::string::npos) {
+                        if (ki < 8 && kj < 8 && white_pieces.find(squares[ki][kj]) != string::npos) {
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[kj], row_indeces[ki]});
                         }
                         break;
@@ -329,7 +374,7 @@ class Board {
                                 int dest_i = i + di;
                                 int dest_j = j + dj;
                                 if (dest_i >= 0 && dest_i < 8 && dest_j >= 0 && dest_j < 8) {
-                                    if (squares[dest_i][dest_j] == ' ' || white_pieces.find(squares[dest_i][dest_j]) != std::string::npos) {
+                                    if (squares[dest_i][dest_j] == ' ' || white_pieces.find(squares[dest_i][dest_j]) != string::npos) {
                                         continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[dest_j], row_indeces[dest_i]});
                                     }
                                 }
@@ -341,28 +386,63 @@ class Board {
             } 
         }
     }
+
+    double get_evaluation() const {
+        return eval;
+    }
+
+    string get_best_continuation() const {
+        return best_continuation;
+    }
+
+    string get_previous_move() const {
+        return previous_move;
+    }
 };
 
 const char* get_move(const char* board_str) {
-    Board board(board_str);
+    if (!board_str) return nullptr;
 
-    // TEST CODE
-    board.generate_legal_moves();
+    char squares[8][8];
+    for (int i = 0; i < 8; ++i) {
+        for (int j = 0; j < 8; ++j) {
+            squares[i][j] = board_str[i*8 + j];
+        }
+    }
+    bool white_to_move = (board_str[64] == 'w');
+
+    int depth = 1;
+    // pass pointer to first element of the 2D array (flat 64-byte buffer)
+    // pass an explicit empty string instead of nullptr to avoid constructing
+    // a string from a null pointer (which throws).
+    Board board(&squares[0][0], string(), white_to_move, depth);
+    //board.generate_legal_moves();
 
     //print moves for testing
-    /*for (const std::string& move : board.continuations) {
-        std::cout << "Generated move: " << move << std::endl;
+    /*for (const string& move : board.continuations) {
+        cout << "Generated move: " << move << endl;
     }
 
     return board.continuations.front().c_str();*/
-    return "e2e4";
+    // Copy the result into a static string so the returned const char* remains
+    // valid after this function returns. (Caller should treat it as read-only
+    // and that it may be overwritten by subsequent calls.)
+    static string result_storage;
+    result_storage = board.get_best_continuation();
+    return result_storage.c_str();
 }
+
+/*extern "C" const char* get_move(const char* board_str) {
+    Board board(board_str);
+
+    return "e2e4";
+}*/
 
 // Simple test main for local testing. Builds a starting-position board string
 // (64 chars, row-major from rank 8 to rank 1) and appends a side-to-move
 // character ('w' or 'b') at index 64. Calls get_move() and prints the result.
 int main() {
-    std::string start =
+    string start =
         "rnbqkbnr"  // rank 8
         "pppppppp"  // rank 7
         "        "  // rank 6
@@ -374,6 +454,6 @@ int main() {
         "w";         // side to move: 'w' for white, 'b' for black
 
     const char* result = get_move(start.c_str());
-    std::cout << "get_move returned: " << (result ? result : "(null)") << std::endl;
+    //cout << "get_move returned: " << (result ? result : "(null)") << endl;
     return 0;
 }
