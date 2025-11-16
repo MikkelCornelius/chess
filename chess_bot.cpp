@@ -400,7 +400,27 @@ class Board {
     }
 };
 
-const char* get_move(const char* board_str) {
+extern "C" const char* get_move(const char* board_str) {
+    if (!board_str) return nullptr;
+
+    char squares[8][8];
+    for (int i = 0; i < 8; ++i) {
+        for (int j = 0; j < 8; ++j) {
+            squares[i][j] = board_str[i*8 + j];
+        }
+    }
+    bool white_to_move = (board_str[64] == 'w');
+
+    int depth = 1;
+
+    Board board(&squares[0][0], string(), white_to_move, depth);
+
+    static string result_storage;
+    result_storage = board.get_best_continuation();
+    return result_storage.c_str();
+}
+
+/*const char* get_move(const char* board_str) {
     if (!board_str) return nullptr;
 
     char squares[8][8];
@@ -419,11 +439,11 @@ const char* get_move(const char* board_str) {
     //board.generate_legal_moves();
 
     //print moves for testing
-    /*for (const string& move : board.continuations) {
+    for (const string& move : board.continuations) {
         cout << "Generated move: " << move << endl;
     }
 
-    return board.continuations.front().c_str();*/
+    return board.continuations.front().c_str();
     // Copy the result into a static string so the returned const char* remains
     // valid after this function returns. (Caller should treat it as read-only
     // and that it may be overwritten by subsequent calls.)
@@ -431,17 +451,12 @@ const char* get_move(const char* board_str) {
     result_storage = board.get_best_continuation();
     return result_storage.c_str();
 }
-
-/*extern "C" const char* get_move(const char* board_str) {
-    Board board(board_str);
-
-    return "e2e4";
-}*/
+*/
 
 // Simple test main for local testing. Builds a starting-position board string
 // (64 chars, row-major from rank 8 to rank 1) and appends a side-to-move
 // character ('w' or 'b') at index 64. Calls get_move() and prints the result.
-int main() {
+/*int main() {
     string start =
         "rnbqkbnr"  // rank 8
         "pppppppp"  // rank 7
@@ -456,4 +471,4 @@ int main() {
     const char* result = get_move(start.c_str());
     //cout << "get_move returned: " << (result ? result : "(null)") << endl;
     return 0;
-}
+}*/

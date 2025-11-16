@@ -1,5 +1,6 @@
 import pygame
 import ctypes
+import os
 
 # TODO: Implement check, checkmate, stalemate, promotion
 
@@ -249,8 +250,47 @@ w_en_passant_legal = 8 #8 out of bounds means not legal
 b_en_passant_legal = 8
 en_passant = False
 
-# Load bot
-bot = ctypes.CDLL('./chessbot.dll')
+# This is vib coded shit. Had trouble with dependencies. For some reason it works now
+# Load bot with fallback: if the DLL (or its dependencies) aren't found,
+# try adding common MSYS2 runtime directories to the process DLL search path
+def _load_bot_dll():
+    dll_rel = os.path.join(os.path.dirname(__file__), 'chessbot.dll')
+    # prefer the explicit full path
+    dll_path = os.path.abspath(dll_rel)
+    try:
+        return ctypes.CDLL(dll_path)
+    except (FileNotFoundError, OSError):
+        # candidate MSYS2/UCRT directories to try
+        candidates = [r"C:\msys64\ucrt64\bin", r"C:\msys64\mingw64\bin", r"C:\msys64\usr\bin"]
+        for d in candidates:
+            if not os.path.isdir(d):
+                continue
+            try:
+                handle = os.add_dll_directory(d)
+            except Exception:
+                handle = None
+            try:
+                return ctypes.CDLL(dll_path)
+            except (FileNotFoundError, OSError):
+                # remove the directory we added and continue
+                if handle is not None:
+                    try:
+                        os.remove_dll_directory(handle)
+                    except Exception:
+                        pass
+                continue
+        # As a last resort, try loading any chessbot.dll directly from those dirs
+        for d in candidates:
+            p = os.path.join(d, 'chessbot.dll')
+            if os.path.exists(p):
+                try:
+                    return ctypes.CDLL(os.path.abspath(p))
+                except Exception:
+                    pass
+        # re-raise a clear error
+        raise FileNotFoundError(f"Could not load chessbot.dll. Tried {dll_path} and MSYS2 bins.")
+
+bot = _load_bot_dll()
 bot.get_move.restype = ctypes.c_char_p
 bot.get_move.argtypes = [ctypes.c_char_p]
 
@@ -309,6 +349,7 @@ while running:
                 from_pos = (row_indices[bot_move[1]], col_indices[bot_move[0]])
                 to_pos = (row_indices[bot_move[3]], col_indices[bot_move[2]])
                 move_piece(from_pos, to_pos)
+                current_player = 'b' if current_player == 'w' else 'w'
                 draw_board()
 
         elif event.type == pygame.MOUSEBUTTONDOWN:
