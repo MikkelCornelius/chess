@@ -2,10 +2,11 @@
 #include <forward_list>
 #include <vector>
 #include <memory>
+#include <format>
 
 using namespace std;
 
-// compile with: g++ -shared -fPIC -o chessbot.dll chess_bot.cpp
+// compile with: g++ -std=c++20 -shared -fPIC -o chessbot.dll chess_bot.cpp
 
 constexpr char col_indeces[8] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'};
 constexpr char row_indeces[8] = {'8', '7', '6', '5', '4', '3', '2', '1'};
@@ -108,6 +109,8 @@ class Board {
 
     void evaluate() {
         // Simple evaluation function (material count)
+        bool w_king_alive = false;
+        bool b_king_alive = false;
         double score = 0.0;
         for (int i = 0; i < 8; ++i) {
             for (int j = 0; j < 8; ++j) {
@@ -118,17 +121,19 @@ class Board {
                     case 'B': score += 3.0; break;
                     case 'R': score += 5.0; break;
                     case 'Q': score += 9.0; break;
-                    case 'K': score += 0.0; break;
+                    case 'K': w_king_alive = true; break;
                     case 'p': score -= 1.0; break;
                     case 'n': score -= 3.0; break;
                     case 'b': score -= 3.0; break;
                     case 'r': score -= 5.0; break;
                     case 'q': score -= 9.0; break;
-                    case 'k': score -= 0.0; break;
+                    case 'k': b_king_alive = true; break;
                 }
             }
         }
-        this->eval = score;
+        if (!w_king_alive) {this->eval = -1000.0;}
+        else if (!b_king_alive) {this->eval = 1000.0;}
+        else {this->eval = score;}
     }
 
     void generate_legal_moves() {
@@ -416,7 +421,9 @@ extern "C" const char* get_move(const char* board_str) {
     Board board(&squares[0][0], string(), white_to_move, depth);
 
     static string result_storage;
-    result_storage = board.get_best_continuation();
+    double eval = board.get_evaluation();
+    string formatted_eval = (eval<0) ? format("{:.2f}", eval) : "+"+format("{:.2f}", eval);
+    result_storage = board.get_best_continuation().substr(2) + formatted_eval;
     return result_storage.c_str();
 }
 
@@ -443,7 +450,7 @@ extern "C" const char* get_move(const char* board_str) {
 }
 
 int main() {
-    string exPos1 =
+    string start =
         "rnbqkbnr"
         "pppppppp"
         "        "
@@ -453,28 +460,28 @@ int main() {
         "PPPPPPPP"
         "RNBQKBNR"
         "w";
-    string exPos2 =
-        "qr      "
-        "rp      "
+    string king_capture_pos =
+        "kr rqr  "
+        "rpNprp  "
+        "        "
+        "        "
+        "        " 
+        "     PPP"
+        "     PKP"
+        "     PPP"
+        "w";
+    string king_capture_pos_3 =
+        "kr   rqp"
+        "rp   prp"
         "        "
         "   N    "
         "        " 
-        "        "
-        "      K "
-        "        "
-        "w";
-    string exPos3 =
-        "qrb     "
-        "rp      "
-        "rp      "
-        "        "
-        "     N  " 
-        "        "
-        "      K "
-        "        "
+        "     PPP"
+        "     PKP"
+        "     PPP"
         "w";
 
-    const char* result = get_move(exPos2.c_str());
+    const char* result = get_move(king_capture_pos_3.c_str());
     cout << "get_move returned: " << result << endl;
     return 0;
 }*/
