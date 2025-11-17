@@ -148,6 +148,17 @@ class Board {
                         if (i==6 && squares[i-2][j]==' ' && squares[i-1][j]==' ') { //double move
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[j], row_indeces[i-2]});
                         }
+                        // captures
+                        if (j-1 >= 0) {
+                            if (black_pieces.find(squares[i-1][j-1]) != string::npos) {
+                                continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[j-1], row_indeces[i-1]});
+                            }
+                        }
+                        if (j+1 < 8) {
+                            if (black_pieces.find(squares[i-1][j+1]) != string::npos) {
+                                continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[j+1], row_indeces[i-1]});
+                            }
+                        }
                         break;
                     
                     case 'N':
@@ -259,23 +270,20 @@ class Board {
                     
                     case 'p':
                         // simple one-step forward
-                        if (i+1 < 8 && squares[i+1][j]==' ') {
+                        if (squares[i+1][j]==' ') {
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[j], row_indeces[i+1]});
                         }
-                        // two-step from starting rank (rank 7 for black pawns, i == 1)
-                        if (i==1 && squares[i+1][j]==' ' && i+2 < 8 && squares[i+2][j]==' ') {
+                        if (i==1 && squares[i+1][j]==' ' && squares[i+2][j]==' ') { //double move
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[j], row_indeces[i+2]});
                         }
                         // captures
-                        if (i+1 < 8 && j-1 >= 0) {
-                            char target = squares[i+1][j-1];
-                            if (white_pieces.find(target) != string::npos) {
+                        if (j-1 >= 0) {
+                            if (white_pieces.find(squares[i+1][j-1]) != string::npos) {
                                 continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[j-1], row_indeces[i+1]});
                             }
                         }
-                        if (i+1 < 8 && j+1 < 8) {
-                            char target = squares[i+1][j+1];
-                            if (white_pieces.find(target) != string::npos) {
+                        if (j+1 < 8) {
+                            if (white_pieces.find(squares[i+1][j+1]) != string::npos) {
                                 continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[j+1], row_indeces[i+1]});
                             }
                         }
@@ -300,33 +308,29 @@ class Board {
                         int k = i-1;
                         while (k >= 0 && squares[k][j] == ' ') {
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[j], row_indeces[k]});
-                            --k;
-                        }
-                        if (k >= 0 && k < 8 && white_pieces.find(squares[k][j]) != string::npos) {
+                            --k;}
+                        if (k >= 0 && white_pieces.find(squares[k][j]) != string::npos) {
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[j], row_indeces[k]});
                         }
                         k = i+1;
                         while (k < 8 && squares[k][j] == ' ') {
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[j], row_indeces[k]});
-                            ++k;
-                        }
-                        if (k >= 0 && k < 8 && white_pieces.find(squares[k][j]) != string::npos) {
+                            ++k;}
+                        if (k < 8 && white_pieces.find(squares[k][j]) != string::npos) {
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[j], row_indeces[k]});
                         }
                         k = j-1;
                         while (k >= 0 && squares[i][k] == ' ') {
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[k], row_indeces[i]});
-                            --k;
-                        }
-                        if (k >= 0 && k < 8 && white_pieces.find(squares[i][k]) != string::npos) {
+                            --k;}
+                        if (k >= 0 && white_pieces.find(squares[i][k]) != string::npos) {
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[k], row_indeces[i]});
                         }
                         k = j+1;
                         while (k < 8 && squares[i][k] == ' ') {
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[k], row_indeces[i]});
-                            ++k;
-                        }
-                        if (k >= 0 && k < 8 && white_pieces.find(squares[i][k]) != string::npos) {
+                            ++k;}
+                        if (k < 8 && white_pieces.find(squares[i][k]) != string::npos) {
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[k], row_indeces[i]});
                         }
                         if (piece != 'q') break; // fall through for queen
@@ -334,34 +338,30 @@ class Board {
                     case 'b': {
                         int ki, kj;
                         ki = i-1; kj = j-1;
-                        while (ki >= 0 && kj >= 0 && squares[ki][kj] == ' ') {
+                        while (ki >= 0 && kj >= 0 && squares[ki][kj] == ' ') { //create legal move until blocked
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[kj], row_indeces[ki]});
-                            --ki; --kj;
-                        }
-                        if (ki >= 0 && kj >= 0 && white_pieces.find(squares[ki][kj]) != string::npos) {
+                            --ki; --kj;}
+                        if (ki >= 0 && kj >= 0 && white_pieces.find(squares[ki][kj]) != string::npos) { //if opponent piece, add one more move (and check whether still in bound)
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[kj], row_indeces[ki]});
                         }
                         ki = i-1; kj = j+1;
-                        while (ki >= 0 && kj < 8 && squares[ki][kj] == ' ') {
+                        while (ki >= 0 && kj < 8 && squares[ki][kj] == ' ') { //do the same in other direction
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[kj], row_indeces[ki]});
-                            --ki; ++kj;
-                        }
+                            --ki; ++kj;}
                         if (ki >= 0 && kj < 8 && white_pieces.find(squares[ki][kj]) != string::npos) {
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[kj], row_indeces[ki]});
                         }
                         ki = i+1; kj = j-1;
                         while (ki < 8 && kj >= 0 && squares[ki][kj] == ' ') {
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[kj], row_indeces[ki]});
-                            ++ki; --kj;
-                        }
+                            ++ki; --kj;}
                         if (kj >= 0 && ki < 8 && white_pieces.find(squares[ki][kj]) != string::npos) {
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[kj], row_indeces[ki]});
                         }
                         ki = i+1; kj = j+1;
                         while (ki < 8 && kj < 8 && squares[ki][kj] == ' ') {
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[kj], row_indeces[ki]});
-                            ++ki; ++kj;
-                        }
+                            ++ki; ++kj;}
                         if (ki < 8 && kj < 8 && white_pieces.find(squares[ki][kj]) != string::npos) {
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[kj], row_indeces[ki]});
                         }
