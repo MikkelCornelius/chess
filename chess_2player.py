@@ -344,12 +344,15 @@ while running:
                 running = False
             elif event.key == pygame.K_SPACE:
                 #make bot move
-                bot_move = bot.get_move(encode_board().encode()).decode('utf-8')
+                bot_response = bot.get_move(encode_board().encode()).decode('utf-8')
+                bot_move = bot_response[2:6]
                 print("Bot move:", bot_move)
                 from_pos = (row_indices[bot_move[1]], col_indices[bot_move[0]])
                 to_pos = (row_indices[bot_move[3]], col_indices[bot_move[2]])
                 move_piece(from_pos, to_pos)
                 current_player = 'b' if current_player == 'w' else 'w'
+                print("white to move" if current_player=='w' else "black to move")
+                print("Best continuation:", bot_response[8:], end='\n\n')
                 draw_board()
 
         elif event.type == pygame.MOUSEBUTTONDOWN:

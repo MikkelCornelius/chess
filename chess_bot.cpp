@@ -31,19 +31,18 @@ class Board {
             for (int j = 0; j < 8; ++j)
                 squares[i][j] = init_squares[i*8 + j];
         this->previous_move = previous_move;
-        this->best_continuation = previous_move;
         this->white_to_move = init_white_to_move;
 
-        if (depth > 1) {
-            evaluate(); //write what to do later
-        } else if (depth == 1) {
+        if (depth == 0) {
+            this->best_continuation = previous_move;
+        }
+        if (depth > 0) {
             this->generate_legal_moves();
-
 
             // Create array of pointers to boards
             vector<unique_ptr<Board>> boards;
-            int length = static_cast<int>(distance(continuations.begin(), continuations.end()));
-            boards.reserve(length);
+            int num_continuations = static_cast<int>(distance(continuations.begin(), continuations.end()));
+            boards.reserve(num_continuations); //set length of array
 
             // Create all boards and store pointers
             int i = 0;
@@ -52,7 +51,9 @@ class Board {
                 boards.emplace_back(make_unique<Board>(buf, current_move, !white_to_move, depth-1));
                 delete [] buf;
 
-                boards.back()->evaluate(); //evaluate boards of depth 0
+                if (depth == 1) {
+                    boards.back()->evaluate(); //evaluate boards of depth 0
+                }
                 i++;
             }
 
@@ -64,11 +65,11 @@ class Board {
                     board_eval = board->get_evaluation();
                     if (first_child) {
                         this->eval = board_eval;
-                        this->best_continuation = board->get_best_continuation();
+                        this->best_continuation = previous_move+"->"+board->get_best_continuation();
                         first_child = false;
                     } else if (board_eval > this->eval) {
                         this->eval = board_eval;
-                        this->best_continuation = board->get_best_continuation();
+                        this->best_continuation = previous_move+"->"+board->get_best_continuation();
                     }
                 }
             } else {
@@ -76,11 +77,11 @@ class Board {
                     board_eval = board->get_evaluation();
                     if (first_child) {
                         this->eval = board_eval;
-                        this->best_continuation = board->get_best_continuation();
+                        this->best_continuation = previous_move+"->"+board->get_best_continuation();
                         first_child = false;
                     } else if (board_eval < this->eval) {
                         this->eval = board_eval;
-                        this->best_continuation = board->get_best_continuation();
+                        this->best_continuation = previous_move+"->"+board->get_best_continuation();
                     }
                 }
             }
@@ -411,8 +412,7 @@ extern "C" const char* get_move(const char* board_str) {
     }
     bool white_to_move = (board_str[64] == 'w');
 
-    int depth = 1;
-
+    int depth = 3;
     Board board(&squares[0][0], string(), white_to_move, depth);
 
     static string result_storage;
@@ -420,6 +420,7 @@ extern "C" const char* get_move(const char* board_str) {
     return result_storage.c_str();
 }
 
+//FOR TESTING
 /*const char* get_move(const char* board_str) {
     if (!board_str) return nullptr;
 
@@ -431,44 +432,49 @@ extern "C" const char* get_move(const char* board_str) {
     }
     bool white_to_move = (board_str[64] == 'w');
 
-    int depth = 1;
-    // pass pointer to first element of the 2D array (flat 64-byte buffer)
-    // pass an explicit empty string instead of nullptr to avoid constructing
-    // a string from a null pointer (which throws).
+    int depth = 3;
+    cout << "running with depth " << depth << endl;
     Board board(&squares[0][0], string(), white_to_move, depth);
-    //board.generate_legal_moves();
 
-    //print moves for testing
-    for (const string& move : board.continuations) {
-        cout << "Generated move: " << move << endl;
-    }
-
-    return board.continuations.front().c_str();
-    // Copy the result into a static string so the returned const char* remains
-    // valid after this function returns. (Caller should treat it as read-only
-    // and that it may be overwritten by subsequent calls.)
     static string result_storage;
     result_storage = board.get_best_continuation();
+    cout << "Evaluation: " << board.get_evaluation() << endl;
     return result_storage.c_str();
 }
-*/
 
-// Simple test main for local testing. Builds a starting-position board string
-// (64 chars, row-major from rank 8 to rank 1) and appends a side-to-move
-// character ('w' or 'b') at index 64. Calls get_move() and prints the result.
-/*int main() {
-    string start =
-        "rnbqkbnr"  // rank 8
-        "pppppppp"  // rank 7
-        "        "  // rank 6
-        "        "  // rank 5
-        "        "  // rank 4
-        "        "  // rank 3
-        "PPPPPPPP"  // rank 2
-        "RNBQKBNR"  // rank 1
-        "w";         // side to move: 'w' for white, 'b' for black
+int main() {
+    string exPos1 =
+        "rnbqkbnr"
+        "pppppppp"
+        "        "
+        "        "
+        "        " 
+        "        "
+        "PPPPPPPP"
+        "RNBQKBNR"
+        "w";
+    string exPos2 =
+        "qr      "
+        "rp      "
+        "        "
+        "   N    "
+        "        " 
+        "        "
+        "      K "
+        "        "
+        "w";
+    string exPos3 =
+        "qrb     "
+        "rp      "
+        "rp      "
+        "        "
+        "     N  " 
+        "        "
+        "      K "
+        "        "
+        "w";
 
-    const char* result = get_move(start.c_str());
-    //cout << "get_move returned: " << (result ? result : "(null)") << endl;
+    const char* result = get_move(exPos2.c_str());
+    cout << "get_move returned: " << result << endl;
     return 0;
 }*/
