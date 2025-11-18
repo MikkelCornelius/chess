@@ -417,7 +417,7 @@ extern "C" const char* get_move(const char* board_str) {
     }
     bool white_to_move = (board_str[64] == 'w');
 
-    int depth = 3;
+    int depth = 4;
     Board board(&squares[0][0], string(), white_to_move, depth);
 
     static string result_storage;

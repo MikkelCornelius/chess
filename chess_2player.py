@@ -216,6 +216,7 @@ def move_piece(from_tile: tuple, to_tile: tuple):
             board[0][3] = 'bR'
             board[0][0] = '..'
             rmv_highlight((0,0)) #remove rook
+        castling = ''
 
     # Update castling rights
     piece = board[from_tile[0]][from_tile[1]]
