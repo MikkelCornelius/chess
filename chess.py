@@ -172,7 +172,7 @@ def legal_move(from_tile: tuple, to_tile: tuple) -> bool:
     return False
 
 def move_piece(from_tile: tuple, to_tile: tuple):
-    global w_long_castle_legal, w_short_castle_legal, b_long_castle_legal, b_short_castle_legal, b_en_passant_legal, w_en_passant_legal, en_passant
+    global castling, w_long_castle_legal, w_short_castle_legal, b_long_castle_legal, b_short_castle_legal, b_en_passant_legal, w_en_passant_legal, en_passant
     
     # Handle pawn promotion
     if board[from_tile[0]][from_tile[1]] == 'wP':
@@ -347,15 +347,15 @@ while running:
                 #make bot move
                 bot_response = bot.get_move(encode_board().encode()).decode('utf-8')
                 bot_move = bot_response[:4]
-                continuation = bot_response[6:-5]
-                evaluation = bot_response[-5:]
+                continuation = bot_response[6:-6]
+                evaluation = bot_response[-6:]
                 print("Bot move:", bot_move)
                 from_pos = (row_indices[bot_move[1]], col_indices[bot_move[0]])
                 to_pos = (row_indices[bot_move[3]], col_indices[bot_move[2]])
                 move_piece(from_pos, to_pos)
                 current_player = 'b' if current_player == 'w' else 'w'
                 print("white to move" if current_player=='w' else "black to move")
-                print("Best continuation:", continuation, "Eval:", evaluation, end='\n\n')
+                print("Best continuation:", continuation, "Eval:", evaluation[0]+str(float(evaluation[1:])), end='\n\n')
                 draw_board()
 
         elif event.type == pygame.MOUSEBUTTONDOWN:

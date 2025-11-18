@@ -60,14 +60,31 @@ class Board {
 
             // Find best continuation
             double board_eval;
-            bool first_child = true; //always run *if block* in first iteration to initialize eval
+            bool first_child = true;
             if (white_to_move) {
                 for (const auto& board : boards) {
+                    // Get evaluation of each child board
                     board_eval = board->get_evaluation();
+
+                    // If forced mate, find fastest mate. eval==1000.0 mean no king. Eval 1000.0-n mean mate in n moves
+                    if (board_eval > 900.0) {
+                        if (continuations.front() != "a1a1") { //ignore dummy move
+                            board_eval -= 1;
+                        }
+                    }
+                    if (board_eval < -900.0) {
+                        if (continuations.front() != "a1a1") { //ignore dummy move
+                        board_eval += 1;
+                        }
+                    }
+
+                    // Always run *if block* in first iteration to initialize eval
                     if (first_child) {
                         this->eval = board_eval;
                         this->best_continuation = previous_move+"->"+board->get_best_continuation();
                         first_child = false;
+                    
+                    // Find min/max eval
                     } else if (board_eval > this->eval) {
                         this->eval = board_eval;
                         this->best_continuation = previous_move+"->"+board->get_best_continuation();
@@ -75,11 +92,28 @@ class Board {
                 }
             } else {
                 for (const auto& board : boards) {
+                    // Get evaluation of each child board
                     board_eval = board->get_evaluation();
+
+                    // If forced mate, find fastest mate. eval==1000.0 mean no king. Eval 1000.0-n mean mate in n moves
+                    if (board_eval > 900.0) {
+                        if (continuations.front() != "a1a1") { //ignore dummy move
+                            board_eval -= 1;
+                        }
+                    }
+                    if (board_eval < -900.0) {
+                        if (continuations.front() != "a1a1") { //ignore dummy move
+                            board_eval += 1;
+                        }
+                    }   
+
+                    // Always run *if block* in first iteration to initialize eval
                     if (first_child) {
                         this->eval = board_eval;
                         this->best_continuation = previous_move+"->"+board->get_best_continuation();
                         first_child = false;
+                    
+                    // Find min/max eval
                     } else if (board_eval < this->eval) {
                         this->eval = board_eval;
                         this->best_continuation = previous_move+"->"+board->get_best_continuation();
@@ -96,14 +130,55 @@ class Board {
             for (int j = 0; j < 8; ++j)
                 new_board[i*8 + j] = squares[i][j];
         
-        // Execute move on new_board using ASCII subtraction
+        // Decode move on new_board using ASCII subtraction
         int from_col = current_move[0] - 'a';
         int from_row = '8' - current_move[1];
         int to_col = current_move[2] - 'a';
         int to_row = '8' - current_move[3];
+
+        // Determine move type
+        char type = 'n'; //normal move
+        if (squares[from_row][from_col] == 'P' && to_row == 0) {
+            type = 'p'; //promotion
+        } else if (squares[from_row][from_col] == 'p' && to_row == 7) {
+            type = 'p'; //promotion
+        } else if (tolower(static_cast<unsigned char>(squares[from_row][from_col])) == 'p' && from_col != to_col && squares[to_row][to_col] == ' ') {
+            type = 'e'; //en passant
+        } else if (tolower(static_cast<unsigned char>(squares[from_row][from_col])) == 'K' && abs(to_col - from_col) == 2) {
+            type = 'c'; //castling
+        }
+
+        // Move
         new_board[to_row * 8 + to_col] = new_board[from_row * 8 + from_col];
         new_board[from_row * 8 + from_col] = ' ';
-        
+
+        // Handle speacial type move
+        switch (type)
+        {
+        case 'n': //normal move
+            break;
+        case 'p': //promotion
+            if (isupper(new_board[to_row * 8 + to_col])) {
+                new_board[to_row * 8 + to_col] = 'Q'; //promote to queen
+            } else {
+                new_board[to_row * 8 + to_col] = 'q';
+            }
+        case 'e': //en passant
+            if (isupper(new_board[to_row * 8 + to_col])) {
+                new_board[to_row + 1 * 8 + to_col] = ' '; //remove captured pawn
+            } else {
+                new_board[to_row - 1 * 8 + to_col] = ' ';
+            }
+            break;
+        case 'c': //castling
+            if (to_col == 6) { //short castle
+                new_board[to_row * 8 + 5] = new_board[to_row * 8 + 7]; //move rook
+                new_board[to_row * 8 + 7] = ' ';
+            } else {
+                new_board[to_row * 8 + 3] = new_board[to_row * 8 + 0]; //long castle
+                new_board[to_row * 8 + 0] = ' ';
+            }
+        }
         return new_board;
     }
 
@@ -137,6 +212,8 @@ class Board {
     }
 
     void generate_legal_moves() {
+        bool white_king_alive = false;
+        bool black_king_alive = false;
         if (white_to_move) {
             for (int i = 0; i < 8; ++i) {
                 for (int j = 0; j < 8; ++j) {
@@ -248,6 +325,7 @@ class Board {
                     }
 
                     case 'K':
+                        white_king_alive = true;
                         for (int di = -1; di <= 1; ++di) {
                             for (int dj = -1; dj <= 1; ++dj) {
                                 if (di == 0 && dj == 0) continue;
@@ -260,6 +338,9 @@ class Board {
                                 }
                             }
                         }
+                        break;
+                    case 'k':
+                        black_king_alive = true;
                         break;
                     }
                 }
@@ -374,6 +455,7 @@ class Board {
                     }
 
                     case 'k':
+                        black_king_alive = true;
                         for (int di = -1; di <= 1; ++di) {
                             for (int dj = -1; dj <= 1; ++dj) {
                                 if (di == 0 && dj == 0) continue;
@@ -387,9 +469,16 @@ class Board {
                             }
                         }
                         break;
+                    case 'K':
+                        white_king_alive = true;
+                        break;
                     }
                 }
             } 
+        }
+        if (!(white_king_alive && black_king_alive)) {
+            continuations.clear(); //no legal moves if a king is missing
+            continuations.push_front("a1a1"); //dummy move, does nothing
         }
     }
 
@@ -417,12 +506,12 @@ extern "C" const char* get_move(const char* board_str) {
     }
     bool white_to_move = (board_str[64] == 'w');
 
-    int depth = 4;
+    int depth = 3;
     Board board(&squares[0][0], string(), white_to_move, depth);
 
     static string result_storage;
     double eval = board.get_evaluation();
-    string formatted_eval = (eval<0) ? format("{:.2f}", eval) : "+"+format("{:.2f}", eval);
+    string formatted_eval = (eval<0) ? "-"+format("{:05.2f}", abs(eval)) : "+"+format("{:05.2f}", abs(eval));
     result_storage = board.get_best_continuation().substr(2) + formatted_eval;
     return result_storage.c_str();
 }
@@ -481,7 +570,7 @@ int main() {
         "     PPP"
         "w";
 
-    const char* result = get_move(king_capture_pos_3.c_str());
+    const char* result = get_move(king_capture_pos.c_str());
     cout << "get_move returned: " << result << endl;
     return 0;
 }*/
