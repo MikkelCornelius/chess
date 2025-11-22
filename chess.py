@@ -1,6 +1,7 @@
 import pygame
 import ctypes
 import os
+import time
 
 # TODO: Implement check, checkmate, stalemate, promotion, move en passant legal rights from 'legal_move' to 'move_piece' function
 
@@ -345,7 +346,10 @@ while running:
                 running = False
             elif event.key == pygame.K_SPACE:
                 #make bot move
+                time_point = time.time()
                 bot_response = bot.get_move(encode_board().encode()).decode('utf-8')
+                think_time = time.time() - time_point
+                print("Bot thought for:", round(think_time*1000), "ms")
                 bot_move = bot_response[:4]
                 continuation = bot_response[6:-6]
                 evaluation = bot_response[-6:]

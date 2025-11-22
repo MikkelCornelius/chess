@@ -3,6 +3,8 @@
 #include <vector>
 #include <memory>
 #include <format>
+#include <ctime>
+#include <iostream>
 
 using namespace std;
 
@@ -622,7 +624,7 @@ class Board {
     }
 };
 
-extern "C" const char* get_move(const char* board_str) {
+/*extern "C" const char* get_move(const char* board_str) {
     if (!board_str) return nullptr;
 
     char squares[8][8];
@@ -641,10 +643,10 @@ extern "C" const char* get_move(const char* board_str) {
     string formatted_eval = (eval<0) ? "-"+format("{:05.2f}", abs(eval)) : "+"+format("{:05.2f}", abs(eval));
     result_storage = board.get_best_continuation().substr(2) + formatted_eval;
     return result_storage.c_str();
-}
+}*/
 
 //FOR TESTING
-/*const char* get_move(const char* board_str) {
+const char* get_move(const char* board_str) {
     if (!board_str) return nullptr;
 
     char squares[8][8];
@@ -655,7 +657,7 @@ extern "C" const char* get_move(const char* board_str) {
     }
     bool white_to_move = (board_str[64] == 'w');
 
-    int depth = 3;
+    int depth = 4;
     cout << "running with depth " << depth << endl;
     Board board(&squares[0][0], string(), white_to_move, depth);
 
@@ -666,7 +668,7 @@ extern "C" const char* get_move(const char* board_str) {
 }
 
 int main() {
-    string start =
+    string start_pos =
         "rnbqkbnr"
         "pppppppp"
         "        "
@@ -676,28 +678,49 @@ int main() {
         "PPPPPPPP"
         "RNBQKBNR"
         "w";
-    string king_capture_pos =
-        "kr rqr  "
-        "rpNprp  "
-        "        "
-        "        "
-        "        " 
-        "     PPP"
-        "     PKP"
-        "     PPP"
+    string italian_pos =
+        "r bqkbnr"
+        "pppp pp"
+        "  n     "
+        "    p   "
+        "  B P   " 
+        "     N  "
+        "PPPP PPP"
+        "RNBQK  R"
         "w";
-    string king_capture_pos_3 =
-        "kr   rqp"
-        "rp   prp"
+    string midgame_pos =
+        "rn    k "
+        "p  prppp"
+        "b p     "
+        "    p   "
+        "    QP  " 
+        "  P   PN"
+        "P  qP BP"
+        "R    RK "
+        "w";
+    string endgame_pos =
+        "r       "
+        "   R pkp"
+        "      p "
         "        "
-        "   N    "
-        "        " 
-        "     PPP"
-        "     PKP"
-        "     PPP"
+        "  p    P" 
+        "Pp    P "
+        " P   PK "
+        "        "
         "w";
 
-    const char* result = get_move(king_capture_pos.c_str());
-    cout << "get_move returned: " << result << endl;
+    //const char* result = get_move(king_capture_pos.c_str());
+    //cout << "get_move returned: " << result << endl;
+
+    clock_t start_time;
+    clock_t end_time;
+    for (string pos : {start_pos, italian_pos, midgame_pos, endgame_pos}) {
+        start_time = clock();
+        const char* res = get_move(pos.c_str());
+        end_time = clock();
+        double cpu_time_used = double(end_time - start_time) / CLOCKS_PER_SEC * 1000.0;
+        cout << "For position:\n" << pos << "\nget_move returned: " << res << " after " << cpu_time_used << " ms\n" << endl;
+    }
+
     return 0;
-}*/
+}
