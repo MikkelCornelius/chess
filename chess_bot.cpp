@@ -16,55 +16,132 @@ string black_pieces = "pnbrqk";
 int knight_moves[8][2] = {{-2, -1}, {-2, 1}, {-1, -2}, {-1, 2},
                             {1, -2}, {1, 2}, {2, -1}, {2, 1}};
 
-double pawn_eval[8][8] = {
-    {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
-    {5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0},
-    {1.0, 1.0, 2.0, 3.0, 3.0, 2.0, 1.0, 1.0},
-    {0.5, 0.5, 1.0, 2.5, 2.5, 1.0, 0.5, 0.5},
-    {0.0, 0.0, 0.0, 2.0, 2.0, 0.0, 0.0, 0.0},
-    {0.5,-0.5,-1.0, 0.0, 0.0,-1.0,-0.5, 0.5},
-    {0.5, 1.0, 1.0,-2.0,-2.0, 1.0, 1.0, 0.5},
-    {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}
-};
-double knight_eval[8][8] = {
-    {-5.0,-4.0,-3.0,-3.0,-3.0,-3.0,-4.0,-5.0},
-    {-4.0,-2.0, 0.0, 0.0, 0.0, 0.0,-2.0,-4.0},
-    {-3.0, 0.0, 1.0, 1.5, 1.5, 1.0, 0.0,-3.0},
-    {-3.0, 0.5, 1.5, 2.0, 2.0, 1.5, 0.5,-3.0},
-    {-3.0, 0.0, 1.5, 2.0, 2.0, 1.5, 0.0,-3.0},
-    {-3.0, 0.5, 1.0, 1.5, 1.5, 1.0, 0.5,-3.0},
-    {-4.0,-2.0, 0.0, 0.5, 0.5, 0.0,-2.0,-4.0},
-    {-5.0,-4.0,-3.0,-3.0,-3.0,-3.0,-4.0,-5.0}
-};
-double bishop_eval[8][8] = {
-    {-2.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-2.0},
-    {-1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,-1.0},
-    {-1.0, 0.0, 0.5, 1.0, 1.0, 0.5, 0.0,-1.0},
-    {-1.0, 0.5, 0.5, 1.0, 1.0, 0.5, 0.5,-1.0},
-    {-1.0, 0.0, 1.0, 1.0, 1.0, 1.0, 0.0,-1.0},
-    {-1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,-1.0},
-    {-1.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.5,-1.0},
-    {-2.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-2.0}
-};
-double queen_eval[8][8] = {
-    {-2.0,-1.0,-1.0,-0.5,-0.5,-1.0,-1.0,-2.0},
-    {-1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,-1.0},
-    {-1.0, 0.0, 0.5, 0.5, 0.5, 0.5, 0.0,-1.0},
-    {-0.5, 0.0, 0.5, 0.5, 0.5, 0.5, 0.0,-0.5},
-    { 0.0, 0.0, 0.5, 0.5, 0.5, 0.5, 0.0,-0.5},
-    {-1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.0,-1.0},
-    {-1.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0,-1.0},
-    {-2.0,-1.0,-1.0,-0.5,-0.5,-1.0,-1.0,-2.0}
-};
-double king_eval[8][8] = {
-    {-3.0,-4.0,-4.0,-5.0,-5.0,-4.0,-4.0,-3.0},
-    {-3.0,-4.0,-4.0,-5.0,-5.0,-4.0,-4.0,-3.0},
-    {-3.0,-4.0,-4.0,-5.0,-5.0,-4.0,-4.0,-3.0},
-    {-3.0,-4.0,-4.0,-5.0,-5.0,-4.0,-4.0,-3.0},
-    {-2.0,-3.0,-3.0,-4.0,-4.0,-3.0,-3.0,-2.0},
-    {-1.0,-2.0,-2.0,-2.0,-2.0,-2.0,-2.0,-1.0},
-    { 2.0, 2.0, 0.0, 0.0, 0.0, 0.0, 2.0, 2.0},
-    { 2.0, 3.0, 1.0, 0.0, 0.0, 1.0, 3.0, 2.0}
+class Evaluator {
+    private:
+    static constexpr double pawn_eval[8][8] = {
+        {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+        {5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0},
+        {1.0, 1.0, 2.0, 3.0, 3.0, 2.0, 1.0, 1.0},
+        {0.5, 0.5, 1.0, 2.5, 2.5, 1.0, 0.5, 0.5},
+        {0.0, 0.0, 0.0, 2.0, 2.0, 0.0, 0.0, 0.0},
+        {0.5,-0.5,-1.0, 0.0, 0.0,-1.0,-0.5, 0.5},
+        {0.5, 1.0, 1.0,-2.0,-2.0, 1.0, 1.0, 0.5},
+        {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}
+    };
+
+    static constexpr double knight_eval[8][8] = {
+        {-5.0,-4.0,-3.0,-3.0,-3.0,-3.0,-4.0,-5.0},
+        {-4.0,-2.0, 0.0, 0.0, 0.0, 0.0,-2.0,-4.0},
+        {-3.0, 0.0, 1.0, 1.5, 1.5, 1.0, 0.0,-3.0},
+        {-3.0, 0.5, 1.5, 2.0, 2.0, 1.5, 0.5,-3.0},
+        {-3.0, 0.0, 1.5, 2.0, 2.0, 1.5, 0.0,-3.0},
+        {-3.0, 0.5, 1.0, 1.5, 1.5, 1.0, 0.5,-3.0},
+        {-4.0,-2.0, 0.0, 0.5, 0.5, 0.0,-2.0,-4.0},
+        {-5.0,-4.0,-3.0,-3.0,-3.0,-3.0,-4.0,-5.0}
+    };
+    static constexpr double bishop_eval[8][8] = {
+        {-2.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-2.0},
+        {-1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,-1.0},
+        {-1.0, 0.0, 0.5, 1.0, 1.0, 0.5, 0.0,-1.0},
+        {-1.0, 0.5, 0.5, 1.0, 1.0, 0.5, 0.5,-1.0},
+        {-1.0, 0.0, 1.0, 1.0, 1.0, 1.0, 0.0,-1.0},
+        {-1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,-1.0},
+        {-1.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.5,-1.0},
+        {-2.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-2.0}
+    };
+    static constexpr double queen_eval[8][8] = {
+        {-2.0,-1.0,-1.0,-0.5,-0.5,-1.0,-1.0,-2.0},
+        {-1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,-1.0},
+        {-1.0, 0.0, 0.5, 0.5, 0.5, 0.5, 0.0,-1.0},
+        {-0.5, 0.0, 0.5, 0.5, 0.5, 0.5, 0.0,-0.5},
+        { 0.0, 0.0, 0.5, 0.5, 0.5, 0.5, 0.0,-0.5},
+        {-1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.0,-1.0},
+        {-1.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0,-1.0},
+        {-2.0,-1.0,-1.0,-0.5,-0.5,-1.0,-1.0,-2.0}
+    };
+    static constexpr double king_eval[8][8] = {
+        {-3.0,-4.0,-4.0,-5.0,-5.0,-4.0,-4.0,-3.0},
+        {-3.0,-4.0,-4.0,-5.0,-5.0,-4.0,-4.0,-3.0},
+        {-3.0,-4.0,-4.0,-5.0,-5.0,-4.0,-4.0,-3.0},
+        {-3.0,-4.0,-4.0,-5.0,-5.0,-4.0,-4.0,-3.0},
+        {-2.0,-3.0,-3.0,-4.0,-4.0,-3.0,-3.0,-2.0},
+        {-1.0,-2.0,-2.0,-2.0,-2.0,-2.0,-2.0,-1.0},
+        { 2.0, 2.0, 0.0, 0.0, 0.0, 0.0, 2.0, 2.0},
+        { 2.0, 3.0, 1.0, 0.0, 0.0, 1.0, 3.0, 2.0}
+    };
+
+    public:
+
+    static double evaluate_pawn(int row, int col, char squares[8][8], bool white) {
+        double score = 1.0;
+        if (white) {
+            score += pawn_eval[row][col];
+        } else {
+            score += pawn_eval[7-row][col];
+        }
+
+        return score;
+        //add pawn chains, passed pawns(plus rook behind), doubled pawns, isolated pawns.
+    }
+
+    static double evaluate_knight(int row, int col, char squares[8][8]) {
+        double score = 3.0;
+        score += knight_eval[row][col];
+        return score;
+        //potentially add bonus for protecting other minor pieces
+    }
+
+    static double evaluate_bishop(int row, int col, char squares[8][8]) {
+        double score = 3.0;
+        score += bishop_eval[row][col];
+        return score;
+        //potentially add bonus for controlling long diagonals
+    }
+
+    static double evaluate_rook(int row, int col, char squares[8][8]) {
+        double score = 4.0;
+        
+        // Evaluate on number of controled sqaures
+        int i = row-1;
+        while (i >= 0 && squares[i][col] == ' ') {
+            score += 0.2;
+            --i;}
+        i = row+1;
+        while (i < 8 && squares[i][col] == ' ') {
+            score += 0.2;
+            ++i;}
+        i = col-1;
+        while (i >= 0 && squares[row][i] == ' ') {
+            score += 0.2;
+            --i;}
+        i = col+1;
+        while (i < 8 && squares[row][i] == ' ') {
+            score += 0.2;
+            ++i;}
+
+        return score;
+    }
+
+    static double evaluate_queen(int row, int col, char squares[8][8], bool white) {
+        double score = 9.0;
+        if (white) {
+            score += queen_eval[row][col];
+        } else {
+            score += queen_eval[7-row][col];
+        }
+        return score;
+    }
+
+    static double evaluate_king(int row, int col, char squares[8][8], bool white) {
+        double score = 0.0;
+        if (white) {
+            score += king_eval[row][col];
+        } else {
+            score += king_eval[7-row][col];
+        }
+        return score;
+        //potentially add bonus for castling, safety evaluation. Add bonus near pawns
+    }
 };
 
 class Board {
@@ -234,7 +311,6 @@ class Board {
     }
 
     void evaluate() {
-        // Simple evaluation function (material count)
         bool w_king_alive = false;
         bool b_king_alive = false;
         double score = 0.0;
@@ -242,18 +318,18 @@ class Board {
             for (int j = 0; j < 8; ++j) {
                 char piece = squares[i][j];
                 switch (piece) {
-                    case 'P': score += 1.0; score += pawn_eval[i][j]; break;
-                    case 'N': score += 3.0; score += knight_eval[i][j]; break;
-                    case 'B': score += 3.0; score += bishop_eval[i][j]; break;
-                    case 'R': score += 5.0; break;
-                    case 'Q': score += 9.0; score += queen_eval[i][j]; break;
-                    case 'K': w_king_alive = true; score += king_eval[i][j]; break;
-                    case 'p': score -= 1.0; score -= pawn_eval[7-i][j]; break;
-                    case 'n': score -= 3.0; score -= knight_eval[7-i][j]; break;
-                    case 'b': score -= 3.0; score -= bishop_eval[7-i][j]; break;
-                    case 'r': score -= 5.0; break;
-                    case 'q': score -= 9.0; score -= queen_eval[7-i][j]; break;
-                    case 'k': b_king_alive = true; score -= king_eval[7-i][j]; break;
+                    case 'P': score += Evaluator::evaluate_pawn(i, j, squares, true); break;
+                    case 'N': score += Evaluator::evaluate_knight(i, j, squares); break;
+                    case 'B': score += Evaluator::evaluate_bishop(i, j, squares); break;
+                    case 'R': score += Evaluator::evaluate_rook(i, j, squares); break;
+                    case 'Q': score += Evaluator::evaluate_queen(i, j, squares, true); break;
+                    case 'K': score += Evaluator::evaluate_king(i, j, squares, true); w_king_alive = true; break;
+                    case 'p': score -= Evaluator::evaluate_pawn(i, j, squares, false); break;
+                    case 'n': score -= Evaluator::evaluate_knight(i, j, squares); break;
+                    case 'b': score -= Evaluator::evaluate_bishop(i, j, squares); break;
+                    case 'r': score -= Evaluator::evaluate_rook(i, j, squares); break;
+                    case 'q': score -= Evaluator::evaluate_queen(i, j, squares, false); break;
+                    case 'k': score -= Evaluator::evaluate_king(i, j, squares, false); b_king_alive = true; break;
                 }
             }
         }

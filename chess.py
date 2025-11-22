@@ -2,7 +2,7 @@ import pygame
 import ctypes
 import os
 
-# TODO: Implement check, checkmate, stalemate, promotion
+# TODO: Implement check, checkmate, stalemate, promotion, move en passant legal rights from 'legal_move' to 'move_piece' function
 
 # Constants
 TILE_SIZE = 80
