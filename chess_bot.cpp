@@ -3,8 +3,6 @@
 #include <vector>
 #include <memory>
 #include <format>
-#include <ctime>
-#include <iostream>
 
 using namespace std;
 
@@ -624,7 +622,7 @@ class Board {
     }
 };
 
-/*extern "C" const char* get_move(const char* board_str) {
+extern "C" const char* get_move(const char* board_str) {
     if (!board_str) return nullptr;
 
     char squares[8][8];
@@ -643,10 +641,10 @@ class Board {
     string formatted_eval = (eval<0) ? "-"+format("{:05.2f}", abs(eval)) : "+"+format("{:05.2f}", abs(eval));
     result_storage = board.get_best_continuation().substr(2) + formatted_eval;
     return result_storage.c_str();
-}*/
+}
 
 //FOR TESTING
-const char* get_move(const char* board_str) {
+/*const char* get_move(const char* board_str) {
     if (!board_str) return nullptr;
 
     char squares[8][8];
@@ -723,4 +721,4 @@ int main() {
     }
 
     return 0;
-}
+}*/
