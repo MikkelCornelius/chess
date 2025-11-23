@@ -3,9 +3,11 @@ import ctypes
 import os
 import time
 
-# TODO: Implement check, checkmate, stalemate, promotion, move en passant legal rights from 'legal_move' to 'move_piece' function
+# TODO: Implement check, checkmate, stalemate, promotion
+# TODO: Bot endgame depth, bot castling
+# TODO: display captured pieces, highlight last move
 
-# Constants
+# GUI Constants
 TILE_SIZE = 80
 BOARD_SIZE = TILE_SIZE * 8
 LIGHT = (240, 217, 181)
@@ -67,11 +69,6 @@ def legal_move(from_tile: tuple, to_tile: tuple) -> bool:
             to_tile[0] == from_tile[0] - 2 * direction and 
             board[from_tile[0] - direction][from_tile[1]] == '..' and 
             board[to_tile[0]][to_tile[1]] == '..'):
-            # Update en passant legality
-            if direction == -1:
-                w_en_passant_legal = to_tile[1]
-            else:
-                b_en_passant_legal = to_tile[1]
             return True
         # Captures
         if abs(to_tile[1] - from_tile[1]) == 1 and to_tile[0] == from_tile[0] - direction:
@@ -174,18 +171,20 @@ def legal_move(from_tile: tuple, to_tile: tuple) -> bool:
 
 def move_piece(from_tile: tuple, to_tile: tuple):
     global castling, w_long_castle_legal, w_short_castle_legal, b_long_castle_legal, b_short_castle_legal, b_en_passant_legal, w_en_passant_legal, en_passant
-    
+    piece = board[from_tile[0]][from_tile[1]]
+
+
     # Handle pawn promotion
-    if board[from_tile[0]][from_tile[1]] == 'wP':
+    if piece == 'wP':
         if to_tile[0] == 0:
             board[from_tile[0]][from_tile[1]] = 'wQ'  # Promote to queen
-    elif board[from_tile[0]][from_tile[1]] == 'bP':
+    elif piece == 'bP':
         if to_tile[0] == 7:
             board[from_tile[0]][from_tile[1]] = 'bQ'  # Promote to queen
 
     # Handle en passant capture
     if en_passant:
-        if board[from_tile[0]][from_tile[1]][0] == 'w': #white pawn moved
+        if piece[0] == 'w': #white pawn moved
             board[to_tile[0]+1][to_tile[1]] = '..' #remove black pawn
             rmv_highlight((to_tile[0]+1, to_tile[1]))
         else: #black pawn moved
@@ -194,7 +193,15 @@ def move_piece(from_tile: tuple, to_tile: tuple):
         en_passant = False
 
     # Update en passant rights
-    if board[from_tile[0]][from_tile[1]][0] == 'b': #if black moved, reset black's en passant rights, else reset white
+        # Set new en passant
+    if piece[1] == 'p' and abs(from_tile[0]-to_pos[0])>1: #if en passant
+        if piece[0] == 'w':
+            b_en_passant_legal = to_tile[1]
+        else:
+            w_en_passant_legal = to_tile[1]
+
+        # reset en passant
+    if piece[0] == 'b': #if black moved, reset black's en passant rights, else reset white
         b_en_passant_legal = 8 #8 out of bounds means not legal
     else:
         w_en_passant_legal = 8
@@ -220,7 +227,6 @@ def move_piece(from_tile: tuple, to_tile: tuple):
         castling = ''
 
     # Update castling rights
-    piece = board[from_tile[0]][from_tile[1]]
     if piece == 'wK':
         w_long_castle_legal = False
         w_short_castle_legal = False
@@ -346,6 +352,7 @@ while running:
                 running = False
             elif event.key == pygame.K_SPACE:
                 #make bot move
+                print("\nBot is thinking..")
                 time_point = time.time()
                 bot_response = bot.get_move(encode_board().encode()).decode('utf-8')
                 think_time = time.time() - time_point
@@ -358,8 +365,8 @@ while running:
                 to_pos = (row_indices[bot_move[3]], col_indices[bot_move[2]])
                 move_piece(from_pos, to_pos)
                 current_player = 'b' if current_player == 'w' else 'w'
-                print("white to move" if current_player=='w' else "black to move")
-                print("Best continuation:", continuation, "Eval:", evaluation[0]+str(float(evaluation[1:])), end='\n\n')
+                #print("white to move" if current_player=='w' else "black to move")
+                #print("Best continuation:", continuation, "Eval:", evaluation[0]+str(float(evaluation[1:])), end='\n\n')
                 draw_board()
 
         elif event.type == pygame.MOUSEBUTTONDOWN:

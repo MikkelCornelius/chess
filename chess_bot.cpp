@@ -2,7 +2,7 @@
 #include <forward_list>
 #include <vector>
 #include <memory>
-#include <format>
+//#include <format>
 
 using namespace std;
 
@@ -638,7 +638,7 @@ extern "C" const char* get_move(const char* board_str) {
 
     static string result_storage;
     double eval = board.get_evaluation();
-    string formatted_eval = (eval<0) ? "-"+format("{:05.2f}", abs(eval)) : "+"+format("{:05.2f}", abs(eval));
+    string formatted_eval = (eval<0) ? "-"+to_string(abs(eval)) : "+"+to_string(abs(eval));
     result_storage = board.get_best_continuation().substr(2) + formatted_eval;
     return result_storage.c_str();
 }
