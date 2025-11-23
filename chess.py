@@ -5,15 +5,17 @@ import time
 
 # TODO: Implement check, checkmate, stalemate, promotion
 # TODO: Bot endgame depth, bot castling
-# TODO: display captured pieces, highlight last move
+# TODO: highlight last move
 
 # GUI Constants
 TILE_SIZE = 80
 BOARD_SIZE = TILE_SIZE * 8
+UI_HEIGHT = 100
 LIGHT = (240, 217, 181)
 DARK = (181, 136, 99)
 HIGHLIGHT_COLOR = (255, 255, 0)
 HIGHLIGHT_ALPHA = 140
+WHITE = (255, 255, 255)
 
 # Board setup
 board = [['bR', 'bN', 'bB', 'bQ', 'bK', 'bB', 'bN', 'bR'],
@@ -28,6 +30,18 @@ board_encoder = {'bR': 'r', 'bN': 'n', 'bB': 'b', 'bQ': 'q', 'bK': 'k', 'bP': 'p
                  'wR': 'R', 'wN': 'N', 'wB': 'B', 'wQ': 'Q', 'wK': 'K', 'wP': 'P',
                  '..': ' '}
 board_encoded = ""
+w_captured_pieces = {'bP': 0,
+                     'bN': 0,
+                     'bB': 0,
+                     'bR': 0,
+                     'bQ': 0,
+                     'bK': 0}
+b_captured_pieces = {'wP': 0,
+                     'wN': 0,
+                     'wB': 0,
+                     'wR': 0,
+                     'wQ': 0,
+                     'wK': 0}
 
 # Board coordinates
 col_indices = {'a': 0, 'b': 1, 'c': 2, 'd': 3, 'e': 4, 'f': 5, 'g': 6, 'h': 7}
@@ -42,13 +56,13 @@ def encode_board() -> str:
     return encoded+current_player
 
 def highlight(selected_tile: tuple):
-    rect = pygame.Rect(selected_tile[1] * TILE_SIZE, selected_tile[0] * TILE_SIZE, TILE_SIZE, TILE_SIZE)
+    rect = pygame.Rect(selected_tile[1] * TILE_SIZE, selected_tile[0] * TILE_SIZE + UI_HEIGHT, TILE_SIZE, TILE_SIZE)
     overlay = pygame.Surface((TILE_SIZE, TILE_SIZE), pygame.SRCALPHA)
     overlay.fill((*HIGHLIGHT_COLOR, HIGHLIGHT_ALPHA))
     screen.blit(overlay, rect.topleft)
 
 def rmv_highlight(selected_tile: tuple):
-    rect = pygame.Rect(selected_tile[1] * TILE_SIZE, selected_tile[0] * TILE_SIZE, TILE_SIZE, TILE_SIZE)
+    rect = pygame.Rect(selected_tile[1] * TILE_SIZE, selected_tile[0] * TILE_SIZE + UI_HEIGHT, TILE_SIZE, TILE_SIZE)
     color = LIGHT if (selected_tile[0] + selected_tile[1]) % 2 == 0 else DARK
     pygame.draw.rect(screen, color, rect)
     if board[selected_tile[0]][selected_tile[1]] != '..':
@@ -173,6 +187,13 @@ def move_piece(from_tile: tuple, to_tile: tuple):
     global castling, w_long_castle_legal, w_short_castle_legal, b_long_castle_legal, b_short_castle_legal, b_en_passant_legal, w_en_passant_legal, en_passant
     piece = board[from_tile[0]][from_tile[1]]
 
+    # Add captured piece
+    captured_piece = board[to_tile[0]][to_tile[1]]
+    if captured_piece != '..':
+        if piece[0]=='w': #if white is capturing a piece, add that piece to list of captured pieces, else add it to blacks list
+            w_captured_pieces[captured_piece] += 1
+        else:
+            b_captured_pieces[captured_piece] += 1
 
     # Handle pawn promotion
     if piece == 'wP':
@@ -194,13 +215,13 @@ def move_piece(from_tile: tuple, to_tile: tuple):
 
     # Update en passant rights
         # Set new en passant
-    if piece[1] == 'p' and abs(from_tile[0]-to_pos[0])>1: #if en passant
+    if piece[1] == 'P' and abs(from_tile[0]-to_tile[0])>1: #if en passant
         if piece[0] == 'w':
             b_en_passant_legal = to_tile[1]
         else:
             w_en_passant_legal = to_tile[1]
 
-        # reset en passant
+        # Reset en passant
     if piece[0] == 'b': #if black moved, reset black's en passant rights, else reset white
         b_en_passant_legal = 8 #8 out of bounds means not legal
     else:
@@ -306,8 +327,9 @@ bot.get_move.argtypes = [ctypes.c_char_p]
 pygame.init()
 
 # Create window
-screen = pygame.display.set_mode((BOARD_SIZE, BOARD_SIZE))
-pygame.display.set_caption("Empty Chess Board")
+screen = pygame.display.set_mode((BOARD_SIZE, BOARD_SIZE+2*UI_HEIGHT))
+pygame.display.set_caption("Chess")
+screen.fill(WHITE) #set white background
 
 # Load assets
 assets = ['bR', 'bN', 'bB', 'bQ', 'bK', 'bP',
@@ -325,17 +347,40 @@ for piece in assets:
 for row in range(8):
     for col in range(8):
         color = LIGHT if (row + col) % 2 == 0 else DARK
-        pygame.draw.rect(screen, color, (col * TILE_SIZE, row * TILE_SIZE, TILE_SIZE, TILE_SIZE))
+        pygame.draw.rect(screen, color, (col * TILE_SIZE, row * TILE_SIZE + UI_HEIGHT, TILE_SIZE, TILE_SIZE))
 
 # Set pieces
 def draw_board():
     for row in range(8):
         for col in range(8):
-            rect = pygame.Rect(col * TILE_SIZE, row * TILE_SIZE, TILE_SIZE, TILE_SIZE)
+            rect = pygame.Rect(col * TILE_SIZE, row * TILE_SIZE + UI_HEIGHT, TILE_SIZE, TILE_SIZE)
             color = LIGHT if (row + col) % 2 == 0 else DARK
             pygame.draw.rect(screen, color, rect)
             if board[row][col] != '..':
                 screen.blit(piece_images[board[row][col]], rect.topleft)
+    
+    # Add captured pieces
+    #black
+    pygame.draw.rect(screen, WHITE, (0, 0, BOARD_SIZE, UI_HEIGHT)) #clear
+    offset = 0
+    for key in b_captured_pieces:
+        if b_captured_pieces[key]:
+            for _ in range(b_captured_pieces[key]):
+                screen.blit(piece_images[key], (offset, 0))
+                offset += 20
+            offset += 50
+    
+    #white
+    pygame.draw.rect(screen, WHITE, (0, UI_HEIGHT+BOARD_SIZE, BOARD_SIZE, UI_HEIGHT)) #clear
+    offset = 0
+    for key in w_captured_pieces:
+        if w_captured_pieces[key]:
+            for _ in range(w_captured_pieces[key]):
+                screen.blit(piece_images[key], (offset, UI_HEIGHT+BOARD_SIZE))
+                offset += 20
+            offset += 50
+
+    # Set changes
     pygame.display.flip()
 draw_board()
 
@@ -373,7 +418,7 @@ while running:
             if event.button == 1:
                 mx, my = event.pos
                 col = mx // TILE_SIZE
-                row = my // TILE_SIZE
+                row = (my-UI_HEIGHT) // TILE_SIZE
                 if (0<=row<8 and 0<=col<8) and (board[row][col]!='..') and (board[row][col][0]==current_player): #if selecting a piece
                     if selected_tile:
                         rmv_highlight(selected_tile) #old selected tile
