@@ -5,7 +5,7 @@ import time
 
 # TODO: Implement check, checkmate, stalemate, promotion
 # TODO: Bot endgame depth, bot openings, bot message formatting, bot castling, bot en passant
-# TODO: highlight last move, play as black, label rows and cols
+# TODO: highlight last move, label rows and cols
 
 # GUI Constants
 TILE_SIZE = 80
@@ -320,6 +320,24 @@ bot = _load_bot_dll()
 bot.get_move.restype = ctypes.c_char_p
 bot.get_move.argtypes = [ctypes.c_char_p]
 
+def get_bot_move():
+    global current_player
+    print("\nBot is thinking..")
+    time_point = time.time()
+    bot_response = bot.get_move(encode_board().encode()).decode('utf-8')
+    think_time = time.time() - time_point
+    print("Bot thought for:", round(think_time*1000), "ms")
+    bot_move = bot_response[:4]
+    continuation = bot_response[6:-6]
+    evaluation = bot_response[-6:]
+    print("Bot move:", bot_move)
+    from_pos = (row_indices[bot_move[1]], col_indices[bot_move[0]])
+    to_pos = (row_indices[bot_move[3]], col_indices[bot_move[2]])
+    move_piece(from_pos, to_pos)
+    current_player = 'b' if current_player == 'w' else 'w'
+    #print("white to move" if current_player=='w' else "black to move")
+    #print("Best continuation:", continuation, "Eval:", evaluation[0]+str(float(evaluation[1:])), end='\n\n')
+
 # Initialize Pygame
 pygame.init()
 
@@ -449,6 +467,9 @@ while running:
 draw_board()
 running = True
 current_player = 'w'
+if player=='b':
+    get_bot_move()
+    draw_board()
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -458,21 +479,7 @@ while running:
                 running = False
             elif event.key == pygame.K_SPACE:
                 #make bot move
-                print("\nBot is thinking..")
-                time_point = time.time()
-                bot_response = bot.get_move(encode_board().encode()).decode('utf-8')
-                think_time = time.time() - time_point
-                print("Bot thought for:", round(think_time*1000), "ms")
-                bot_move = bot_response[:4]
-                continuation = bot_response[6:-6]
-                evaluation = bot_response[-6:]
-                print("Bot move:", bot_move)
-                from_pos = (row_indices[bot_move[1]], col_indices[bot_move[0]])
-                to_pos = (row_indices[bot_move[3]], col_indices[bot_move[2]])
-                move_piece(from_pos, to_pos)
-                current_player = 'b' if current_player == 'w' else 'w'
-                #print("white to move" if current_player=='w' else "black to move")
-                #print("Best continuation:", continuation, "Eval:", evaluation[0]+str(float(evaluation[1:])), end='\n\n')
+                get_bot_move()
                 draw_board()
 
         elif event.type == pygame.MOUSEBUTTONDOWN:
@@ -493,6 +500,8 @@ while running:
                         move_piece(selected_tile, (row, col))
                         selected_tile = None
                         current_player = 'b' if current_player == 'w' else 'w'
+                        draw_board()
+                        get_bot_move()
                         draw_board()
                 else: #unselect if clicked outside or on empty tile or on opponent's piece
                     if selected_tile:
