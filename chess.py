@@ -5,7 +5,6 @@ import time
 
 # TODO: Implement check, checkmate, stalemate, promotion
 # TODO: Bot endgame depth, bot openings, bot message formatting, bot castling, bot en passant
-# TODO: highlight last move, label rows and cols
 
 # GUI Constants
 TILE_SIZE = 80
@@ -50,6 +49,8 @@ b_captured_pieces = {'wP': 0,
 # Board coordinates
 col_indices = {'a': 0, 'b': 1, 'c': 2, 'd': 3, 'e': 4, 'f': 5, 'g': 6, 'h': 7}
 row_indices = {'1': 7, '2': 6, '3': 5, '4': 4, '5': 3, '6': 2, '7': 1, '8': 0}
+row_labels = ['8', '7', '6', '5', '4', '3', '2', '1']
+col_labels = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
 
 # Functions
 def encode_board() -> str:
@@ -377,6 +378,27 @@ def draw_board():
             if board[row][col] != '..':
                 screen.blit(piece_images[board[row][col]], rect.topleft)
     
+    # Draw row & col labels
+    font = pygame.font.SysFont(None, 25)
+    if player=='w':
+        for row in range(8):
+            font_color = DARK if row%2==0 else LIGHT
+            text = font.render(row_labels[row], True, font_color)
+            screen.blit(text, (5, 5+UI_HEIGHT+row*TILE_SIZE))
+        for col in range(8):
+            font_color = LIGHT if col%2==0 else DARK
+            text = font.render(col_labels[col], True, font_color)
+            screen.blit(text, (5+col*TILE_SIZE, UI_HEIGHT+BOARD_SIZE-20))
+    else:
+        for row in range(8):
+            font_color = DARK if row%2==0 else LIGHT
+            text = font.render(row_labels[7-row], True, font_color)
+            screen.blit(text, (5, 5+UI_HEIGHT+row*TILE_SIZE))
+        for col in range(8):
+            font_color = LIGHT if col%2==0 else DARK
+            text = font.render(col_labels[7-col], True, font_color)
+            screen.blit(text, (5+col*TILE_SIZE, UI_HEIGHT+BOARD_SIZE-20))
+
     # Highlight squares
     if selected_tile:
         highlight(selected_tile)
