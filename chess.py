@@ -4,8 +4,8 @@ import os
 import time
 
 # TODO: Implement check, checkmate, stalemate, promotion
-# TODO: Bot endgame depth, bot castling, bot en passant
-# TODO: highlight last move, play as black
+# TODO: Bot endgame depth, bot openings, bot message formatting, bot castling, bot en passant
+# TODO: highlight last move, play as black, label rows and cols
 
 # GUI Constants
 TILE_SIZE = 80
@@ -16,6 +16,8 @@ DARK = (181, 136, 99)
 HIGHLIGHT_COLOR = (255, 255, 0)
 HIGHLIGHT_ALPHA = 140
 WHITE = (255, 255, 255)
+GREY = (200, 200, 200)
+BLACK = (0, 0, 0)
 
 # Board setup
 board = [['bR', 'bN', 'bB', 'bQ', 'bK', 'bB', 'bN', 'bR'],
@@ -26,6 +28,8 @@ board = [['bR', 'bN', 'bB', 'bQ', 'bK', 'bB', 'bN', 'bR'],
          ['..', '..', '..', '..', '..', '..', '..', '..'],
          ['wP', 'wP', 'wP', 'wP', 'wP', 'wP', 'wP', 'wP'],
          ['wR', 'wN', 'wB', 'wQ', 'wK', 'wB', 'wN', 'wR']]
+selected_tile = None
+past_move = None
 board_encoder = {'bR': 'r', 'bN': 'n', 'bB': 'b', 'bQ': 'q', 'bK': 'k', 'bP': 'p',
                  'wR': 'R', 'wN': 'N', 'wB': 'B', 'wQ': 'Q', 'wK': 'K', 'wP': 'P',
                  '..': ' '}
@@ -56,17 +60,13 @@ def encode_board() -> str:
     return encoded+current_player
 
 def highlight(selected_tile: tuple):
-    rect = pygame.Rect(selected_tile[1] * TILE_SIZE, selected_tile[0] * TILE_SIZE + UI_HEIGHT, TILE_SIZE, TILE_SIZE)
+    if player=='w':
+        rect = pygame.Rect(selected_tile[1] * TILE_SIZE, selected_tile[0] * TILE_SIZE + UI_HEIGHT, TILE_SIZE, TILE_SIZE)
+    else:
+        rect = pygame.Rect((7-selected_tile[1]) * TILE_SIZE, (7-selected_tile[0]) * TILE_SIZE + UI_HEIGHT, TILE_SIZE, TILE_SIZE)
     overlay = pygame.Surface((TILE_SIZE, TILE_SIZE), pygame.SRCALPHA)
     overlay.fill((*HIGHLIGHT_COLOR, HIGHLIGHT_ALPHA))
     screen.blit(overlay, rect.topleft)
-
-def rmv_highlight(selected_tile: tuple):
-    rect = pygame.Rect(selected_tile[1] * TILE_SIZE, selected_tile[0] * TILE_SIZE + UI_HEIGHT, TILE_SIZE, TILE_SIZE)
-    color = LIGHT if (selected_tile[0] + selected_tile[1]) % 2 == 0 else DARK
-    pygame.draw.rect(screen, color, rect)
-    if board[selected_tile[0]][selected_tile[1]] != '..':
-        screen.blit(piece_images[board[selected_tile[0]][selected_tile[1]]], rect.topleft)
 
 def legal_move(from_tile: tuple, to_tile: tuple) -> bool:
     global castling, w_en_passant_legal, b_en_passant_legal, en_passant
@@ -184,8 +184,9 @@ def legal_move(from_tile: tuple, to_tile: tuple) -> bool:
     return False
 
 def move_piece(from_tile: tuple, to_tile: tuple):
-    global castling, w_long_castle_legal, w_short_castle_legal, b_long_castle_legal, b_short_castle_legal, b_en_passant_legal, w_en_passant_legal, en_passant
+    global past_move, castling, w_long_castle_legal, w_short_castle_legal, b_long_castle_legal, b_short_castle_legal, b_en_passant_legal, w_en_passant_legal, en_passant
     piece = board[from_tile[0]][from_tile[1]]
+    past_move = (from_tile, to_tile)
 
     # Add captured piece
     captured_piece = board[to_tile[0]][to_tile[1]]
@@ -209,10 +210,8 @@ def move_piece(from_tile: tuple, to_tile: tuple):
     if en_passant:
         if piece[0] == 'w': #white pawn moved
             board[to_tile[0]+1][to_tile[1]] = '..' #remove black pawn
-            rmv_highlight((to_tile[0]+1, to_tile[1]))
         else: #black pawn moved
             board[to_tile[0]-1][to_tile[1]] = '..' #remove white pawn
-            rmv_highlight((to_tile[0]-1, to_tile[1]))
         en_passant = False
 
     # Update en passant rights
@@ -234,19 +233,15 @@ def move_piece(from_tile: tuple, to_tile: tuple):
         if castling == 'ws':
             board[7][5] = 'wR'
             board[7][7] = '..'
-            rmv_highlight((7,7)) #remove rook
         elif castling == 'wl':
             board[7][3] = 'wR'
             board[7][0] = '..'
-            rmv_highlight((7,0)) #remove rook
         elif castling == 'bs':
             board[0][5] = 'bR'
             board[0][7] = '..'
-            rmv_highlight((0,7)) #remove rook
         elif castling == 'bl':
             board[0][3] = 'bR'
             board[0][0] = '..'
-            rmv_highlight((0,0)) #remove rook
         castling = ''
 
     # Update castling rights
@@ -358,8 +353,18 @@ def draw_board():
             rect = pygame.Rect(col * TILE_SIZE, row * TILE_SIZE + UI_HEIGHT, TILE_SIZE, TILE_SIZE)
             color = LIGHT if (row + col) % 2 == 0 else DARK
             pygame.draw.rect(screen, color, rect)
+            if player == 'b':
+                row = 7-row
+                col = 7-col
             if board[row][col] != '..':
                 screen.blit(piece_images[board[row][col]], rect.topleft)
+    
+    # Highlight squares
+    if selected_tile:
+        highlight(selected_tile)
+    if past_move:
+        highlight(past_move[0])
+        highlight(past_move[1])
     
     # Add captured pieces
     #black
@@ -367,8 +372,8 @@ def draw_board():
     offset = 0
     for key in b_captured_pieces:
         if b_captured_pieces[key]>0:
-            for _ in range(max(b_captured_pieces[key]),0):
-                screen.blit(piece_images[key], (offset, 0))
+            for _ in range(max(b_captured_pieces[key],0)):
+                screen.blit(piece_images[key], (offset, 0 if player=='w' else UI_HEIGHT+BOARD_SIZE))
                 offset += 20
             offset += 50
     
@@ -378,17 +383,71 @@ def draw_board():
     for key in w_captured_pieces:
         if w_captured_pieces[key]>0:
             for _ in range(max(w_captured_pieces[key],0)):
-                screen.blit(piece_images[key], (offset, UI_HEIGHT+BOARD_SIZE))
+                screen.blit(piece_images[key], (offset, UI_HEIGHT+BOARD_SIZE if player=='w' else 0))
                 offset += 20
             offset += 50
 
     # Set changes
     pygame.display.flip()
+
+def make_textbox(x, y, width, height, input_text):
+    button_rect = pygame.Rect(x, y, width, height)
+    font = pygame.font.SysFont(None, 36)
+    text = font.render(input_text, True, (0,0,0))
+    text_rect = text.get_rect(center=button_rect.center)
+    pygame.draw.rect(screen, GREY, button_rect)
+    screen.blit(text, text_rect)
+    return button_rect
+
+# Start main loop
+running = True
+player = 'w'
 draw_board()
 
-# Keep window open until closed
+# main menu
+start_button_rect = make_textbox(4*TILE_SIZE-150, 300, 300, 100, "Single player")
+pygame.display.flip()
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+            exit()
+        
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:
+                if start_button_rect.collidepoint(event.pos):
+                    running = False
+
+# Select player
+draw_board()
+w_player_button_rect = make_textbox(4*TILE_SIZE-150, 300, 300, 50, "Play as white")
+b_player_button_rect = make_textbox(4*TILE_SIZE-150, 400, 300, 50, "Play as black")
+r_player_button_rect = make_textbox(4*TILE_SIZE-150, 500, 300, 50, "Random")
+pygame.display.flip()
 running = True
-selected_tile = None
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+            exit()
+        
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:
+                if w_player_button_rect.collidepoint(event.pos):
+                    player = 'w'
+                    running = False
+                if b_player_button_rect.collidepoint(event.pos):
+                    player = 'b'
+                    running = False
+                if r_player_button_rect.collidepoint(event.pos):
+                    #simple random number generator
+                    mx, my = event.pos
+                    player = ['w','b'][(mx*my)%2]
+                    running = False
+
+# Start game
+draw_board()
+running = True
 current_player = 'w'
 while running:
     for event in pygame.event.get():
@@ -421,22 +480,22 @@ while running:
                 mx, my = event.pos
                 col = mx // TILE_SIZE
                 row = (my-UI_HEIGHT) // TILE_SIZE
+                if player=='b':
+                    col = 7-col
+                    row= 7-row
                 if (0<=row<8 and 0<=col<8) and (board[row][col]!='..') and (board[row][col][0]==current_player): #if selecting a piece
-                    if selected_tile:
-                        rmv_highlight(selected_tile) #old selected tile
                     selected_tile = (row, col)
-                    highlight(selected_tile)
+                    draw_board()
+                    #highlight(selected_tile)
                     pygame.display.flip()
                 elif selected_tile and (0 <= row < 8 and 0 <= col < 8): #if attempting to move selected piece
                     if legal_move(selected_tile, (row, col)):
                         move_piece(selected_tile, (row, col))
-                        rmv_highlight(selected_tile)
                         selected_tile = None
                         current_player = 'b' if current_player == 'w' else 'w'
                         draw_board()
                 else: #unselect if clicked outside or on empty tile or on opponent's piece
                     if selected_tile:
-                        rmv_highlight(selected_tile)
                         selected_tile = None
                         pygame.display.flip()
 
