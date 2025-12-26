@@ -4,8 +4,8 @@ import os
 import time
 
 # TODO: Implement check, checkmate, stalemate, promotion
-# TODO: Bot endgame depth, bot castling
-# TODO: highlight last move
+# TODO: Bot endgame depth, bot castling, bot en passant
+# TODO: highlight last move, play as black
 
 # GUI Constants
 TILE_SIZE = 80
@@ -199,9 +199,11 @@ def move_piece(from_tile: tuple, to_tile: tuple):
     if piece == 'wP':
         if to_tile[0] == 0:
             board[from_tile[0]][from_tile[1]] = 'wQ'  # Promote to queen
+            b_captured_pieces['wQ'] -= 1
     elif piece == 'bP':
         if to_tile[0] == 7:
             board[from_tile[0]][from_tile[1]] = 'bQ'  # Promote to queen
+            w_captured_pieces['bQ'] -= 1
 
     # Handle en passant capture
     if en_passant:
@@ -364,8 +366,8 @@ def draw_board():
     pygame.draw.rect(screen, WHITE, (0, 0, BOARD_SIZE, UI_HEIGHT)) #clear
     offset = 0
     for key in b_captured_pieces:
-        if b_captured_pieces[key]:
-            for _ in range(b_captured_pieces[key]):
+        if b_captured_pieces[key]>0:
+            for _ in range(max(b_captured_pieces[key]),0):
                 screen.blit(piece_images[key], (offset, 0))
                 offset += 20
             offset += 50
@@ -374,8 +376,8 @@ def draw_board():
     pygame.draw.rect(screen, WHITE, (0, UI_HEIGHT+BOARD_SIZE, BOARD_SIZE, UI_HEIGHT)) #clear
     offset = 0
     for key in w_captured_pieces:
-        if w_captured_pieces[key]:
-            for _ in range(w_captured_pieces[key]):
+        if w_captured_pieces[key]>0:
+            for _ in range(max(w_captured_pieces[key],0)):
                 screen.blit(piece_images[key], (offset, UI_HEIGHT+BOARD_SIZE))
                 offset += 20
             offset += 50
