@@ -3,13 +3,14 @@ import ctypes
 import os
 import time
 
-# TODO: Implement check, checkmate, stalemate, promotion
+# TODO: Implement check, checkmate, stalemate, promotion, bugfix undo button for en passant and promotion
 # TODO: Bot endgame depth, bot openings, bot message formatting, bot castling, bot en passant
 
 # GUI Constants
 TILE_SIZE = 80
 BOARD_SIZE = TILE_SIZE * 8
 UI_HEIGHT = 100
+BOTTOM_MENU_HEIGHT = 40
 LIGHT = (240, 217, 181)
 DARK = (181, 136, 99)
 HIGHLIGHT_COLOR = (255, 255, 0)
@@ -29,6 +30,7 @@ board = [['bR', 'bN', 'bB', 'bQ', 'bK', 'bB', 'bN', 'bR'],
          ['wR', 'wN', 'wB', 'wQ', 'wK', 'wB', 'wN', 'wR']]
 selected_tile = None
 past_move = None
+history = []
 board_encoder = {'bR': 'r', 'bN': 'n', 'bB': 'b', 'bQ': 'q', 'bK': 'k', 'bP': 'p',
                  'wR': 'R', 'wN': 'N', 'wB': 'B', 'wQ': 'Q', 'wK': 'K', 'wP': 'P',
                  '..': ' '}
@@ -263,6 +265,9 @@ def move_piece(from_tile: tuple, to_tile: tuple):
         elif from_tile == (0, 7):
             b_short_castle_legal = False
 
+    # Save to history
+    history.append((from_tile, to_tile, board[to_tile[0]][to_tile[1]]))
+
     # Move
     board[to_tile[0]][to_tile[1]] = board[from_tile[0]][from_tile[1]]
     board[from_tile[0]][from_tile[1]] = '..'
@@ -343,7 +348,7 @@ def get_bot_move():
 pygame.init()
 
 # Create window
-screen = pygame.display.set_mode((BOARD_SIZE, BOARD_SIZE+2*UI_HEIGHT))
+screen = pygame.display.set_mode((BOARD_SIZE, BOARD_SIZE+2*UI_HEIGHT+BOTTOM_MENU_HEIGHT))
 pygame.display.set_caption("Chess")
 screen.fill(WHITE) #set white background
 
@@ -357,13 +362,6 @@ for piece in assets:
     piece_image = pygame.image.load(piece_path).convert_alpha()
     piece_image = pygame.transform.smoothscale(piece_image, (TILE_SIZE, TILE_SIZE))
     piece_images[piece] = piece_image
-
-
-# Draw chessboard
-for row in range(8):
-    for col in range(8):
-        color = LIGHT if (row + col) % 2 == 0 else DARK
-        pygame.draw.rect(screen, color, (col * TILE_SIZE, row * TILE_SIZE + UI_HEIGHT, TILE_SIZE, TILE_SIZE))
 
 # Set pieces
 def draw_board():
@@ -439,13 +437,21 @@ def make_textbox(x, y, width, height, input_text):
     screen.blit(text, text_rect)
     return button_rect
 
+# Draw chessboard
+for row in range(8):
+    for col in range(8):
+        color = LIGHT if (row + col) % 2 == 0 else DARK
+        pygame.draw.rect(screen, color, (col * TILE_SIZE, row * TILE_SIZE + UI_HEIGHT, TILE_SIZE, TILE_SIZE))
+undo_button_rect = make_textbox(10, BOARD_SIZE+2*UI_HEIGHT, 100, 30, "undo")
+
 # Start main loop
 running = True
 player = 'w'
 draw_board()
 
 # main menu
-start_button_rect = make_textbox(4*TILE_SIZE-150, 300, 300, 100, "Single player")
+start_button1_rect = make_textbox(4*TILE_SIZE-150, 300, 300, 100, "Single player")
+start_button2_rect = make_textbox(4*TILE_SIZE-150, 450, 300, 100, "Multiplayer")
 pygame.display.flip()
 while running:
     for event in pygame.event.get():
@@ -455,35 +461,42 @@ while running:
         
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
-                if start_button_rect.collidepoint(event.pos):
+                if start_button1_rect.collidepoint(event.pos):
+                    singleplayer = True
+                    running = False
+                if start_button2_rect.collidepoint(event.pos):
+                    singleplayer = False
                     running = False
 
 # Select player
-draw_board()
-w_player_button_rect = make_textbox(4*TILE_SIZE-150, 300, 300, 50, "Play as white")
-b_player_button_rect = make_textbox(4*TILE_SIZE-150, 400, 300, 50, "Play as black")
-r_player_button_rect = make_textbox(4*TILE_SIZE-150, 500, 300, 50, "Random")
-pygame.display.flip()
-running = True
-while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-            exit()
-        
-        elif event.type == pygame.MOUSEBUTTONDOWN:
-            if event.button == 1:
-                if w_player_button_rect.collidepoint(event.pos):
-                    player = 'w'
-                    running = False
-                if b_player_button_rect.collidepoint(event.pos):
-                    player = 'b'
-                    running = False
-                if r_player_button_rect.collidepoint(event.pos):
-                    #simple random number generator
-                    mx, my = event.pos
-                    player = ['w','b'][(mx*my)%2]
-                    running = False
+if singleplayer:
+    draw_board()
+    w_player_button_rect = make_textbox(4*TILE_SIZE-150, 300, 300, 50, "Play as white")
+    b_player_button_rect = make_textbox(4*TILE_SIZE-150, 400, 300, 50, "Play as black")
+    r_player_button_rect = make_textbox(4*TILE_SIZE-150, 500, 300, 50, "Random")
+    pygame.display.flip()
+    running = True
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+                exit()
+            
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:
+                    if w_player_button_rect.collidepoint(event.pos):
+                        player = 'w'
+                        running = False
+                    if b_player_button_rect.collidepoint(event.pos):
+                        player = 'b'
+                        running = False
+                    if r_player_button_rect.collidepoint(event.pos):
+                        #simple random number generator
+                        mx, my = event.pos
+                        player = ['w','b'][(mx*my)%2]
+                        running = False
+else: #always play from white perspective when multiplayer
+    player = 'w'
 
 # Start game
 draw_board()
@@ -500,7 +513,6 @@ while running:
             if event.key == pygame.K_ESCAPE:
                 running = False
             elif event.key == pygame.K_SPACE:
-                #make bot move
                 get_bot_move()
                 draw_board()
 
@@ -523,12 +535,40 @@ while running:
                         selected_tile = None
                         current_player = 'b' if current_player == 'w' else 'w'
                         draw_board()
-                        get_bot_move()
-                        draw_board()
+                        if singleplayer:
+                            get_bot_move()
+                            draw_board()
                 else: #unselect if clicked outside or on empty tile or on opponent's piece
                     if selected_tile:
                         selected_tile = None
                         pygame.display.flip()
+                if undo_button_rect.collidepoint(event.pos):
+                    if history:
+                        if singleplayer: #undo twice when single player
+                            from_tile = history[-1][0]
+                            to_tile = history[-1][1]
+                            captured = history[-1][2]
+                            board[from_tile[0]][from_tile[1]] = board[to_tile[0]][to_tile[1]]
+                            board[to_tile[0]][to_tile[1]] = captured
+                            history.pop()
+                        from_tile = history[-1][0]
+                        to_tile = history[-1][1]
+                        captured = history[-1][2]
+                        board[from_tile[0]][from_tile[1]] = board[to_tile[0]][to_tile[1]]
+                        board[to_tile[0]][to_tile[1]] = captured
+                        history.pop()
+
+                        if history: #update last move
+                            past_move = history[-1]
+                        else:
+                            past_move = None
+                        draw_board()
 
 
 pygame.quit()
+
+with open("past games/untitled game", "w") as file:
+    for move in history:
+        from_tile = move[0]
+        to_tile = move[1]
+        file.write(col_labels[from_tile[1]]+row_labels[from_tile[0]]+col_labels[to_tile[1]]+row_labels[to_tile[0]]+"->")
