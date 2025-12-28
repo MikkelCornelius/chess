@@ -567,8 +567,16 @@ while running:
 
 pygame.quit()
 
-with open("past games/untitled game", "w") as file:
-    for move in history:
+# Save game
+count = 0
+while os.path.exists("past games/untitled game"+str(count)):
+    count += 1
+
+with open("past games/untitled game"+str(count), "w") as file:
+    for move in history[:-1]:
         from_tile = move[0]
         to_tile = move[1]
         file.write(col_labels[from_tile[1]]+row_labels[from_tile[0]]+col_labels[to_tile[1]]+row_labels[to_tile[0]]+"->")
+    from_tile = history[-1][0]
+    to_tile = history[-1][1]
+    file.write(col_labels[from_tile[1]]+row_labels[from_tile[0]]+col_labels[to_tile[1]]+row_labels[to_tile[0]])
