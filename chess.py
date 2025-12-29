@@ -5,7 +5,7 @@ import pathlib
 import time
 
 # TODO: Implement check, checkmate, stalemate, promotion, bugfix undo button for en passant and promotion, make castle illigal when squares are threatned
-# TODO: Bot endgame depth, bot openings, bot message formatting, bot castling, bot en passant
+# TODO: Bot endgame depth, bot openings, bot message formatting, bot en passant
 
 # GUI Constants
 TILE_SIZE = 80
@@ -326,8 +326,8 @@ def get_bot_move():
     to_pos = (row_indices[bot_move[3]], col_indices[bot_move[2]])
     move_piece(from_pos, to_pos)
     current_player = 'b' if current_player == 'w' else 'w'
-    #print("white to move" if current_player=='w' else "black to move")
-    #print("Best continuation:", continuation, "Eval:", evaluation[0]+str(float(evaluation[1:])), end='\n\n')
+    print("white to move" if current_player=='w' else "black to move")
+    print("Best continuation:", continuation, "Eval:", evaluation[0]+str(float(evaluation[1:])), end='\n\n')
 
 # Initialize Pygame
 pygame.init()

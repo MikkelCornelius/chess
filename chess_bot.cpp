@@ -3,10 +3,12 @@
 #include <vector>
 #include <memory>
 //#include <format>
+#include <iostream>
 
 using namespace std;
 
 // compile with: g++ -std=c++20 -shared -fPIC -o chessbot.dll chess_bot.cpp
+// for tests: g++ -std=c++20 -o chessbot.out chess_bot.cpp
 
 constexpr char col_indeces[8] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'};
 constexpr char row_indeces[8] = {'8', '7', '6', '5', '4', '3', '2', '1'};
@@ -150,17 +152,21 @@ class Board {
     string previous_move;
     string best_continuation;
     bool white_to_move;
+    bool castle_rights[4];
+    int en_passant_rights;
     double eval;
     forward_list<string> continuations;
     int num_continuations = 0;
 
     public:
-    Board(const char* init_squares, const string& previous_move, bool init_white_to_move, int depth) {
+    Board(const char* init_squares, const string& previous_move, bool init_white_to_move, bool castle_rights[4], int en_passant_rights, int depth) {
         for (int i = 0; i < 8; ++i)
             for (int j = 0; j < 8; ++j)
                 squares[i][j] = init_squares[i*8 + j];
         this->previous_move = previous_move;
         this->white_to_move = init_white_to_move;
+        for (int i=0; i<4; i++) {this->castle_rights[0] = castle_rights[0];}
+        this->en_passant_rights = en_passant_rights;
 
         if (depth == 0) {
             this->best_continuation = previous_move;
@@ -177,7 +183,7 @@ class Board {
             int i = 0;
             for (const string& current_move : continuations) {
                 char* buf = move(current_move);
-                boards.emplace_back(make_unique<Board>(buf, current_move, !white_to_move, depth-1));
+                boards.emplace_back(make_unique<Board>(buf, current_move, !white_to_move, castle_rights, en_passant_rights, depth-1));
                 delete [] buf;
 
                 if (depth == 1) {
@@ -265,15 +271,17 @@ class Board {
         int to_row = '8' - current_move[3];
 
         // Determine move type
-        char type = 'n'; //normal move
+        char type;
         if (squares[from_row][from_col] == 'P' && to_row == 0) {
             type = 'p'; //promotion
         } else if (squares[from_row][from_col] == 'p' && to_row == 7) {
             type = 'p'; //promotion
         } else if (tolower(static_cast<unsigned char>(squares[from_row][from_col])) == 'p' && from_col != to_col && squares[to_row][to_col] == ' ') {
             type = 'e'; //en passant
-        } else if (tolower(static_cast<unsigned char>(squares[from_row][from_col])) == 'K' && abs(to_col - from_col) == 2) {
+        } else if (tolower(static_cast<unsigned char>(squares[from_row][from_col])) == 'k' && abs(to_col - from_col) == 2) {
             type = 'c'; //castling
+        } else {
+            type = 'n'; //normal move
         }
 
         // Move
@@ -458,11 +466,23 @@ class Board {
                                 if (di == 0 && dj == 0) continue;
                                 int dest_i = i + di;
                                 int dest_j = j + dj;
-                                if (dest_i >= 0 && dest_i < 8 && dest_j >= 0 && dest_j < 8) {
-                                    if (squares[dest_i][dest_j] == ' ' || black_pieces.find(squares[dest_i][dest_j]) != string::npos) {
+                                if (dest_i >= 0 && dest_i < 8 && dest_j >= 0 && dest_j < 8) { //check out of bounds
+                                    if (squares[dest_i][dest_j] == ' ' || black_pieces.find(squares[dest_i][dest_j]) != string::npos) { //check whether square is free to move to
                                         continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[dest_j], row_indeces[dest_i]});
                                     }
                                 }
+                            }
+                        }
+
+                        // Castling
+                        if (castle_rights[0]) { //white short castle
+                            if (squares[7][5]==' ' && squares[7][6]==' ') {
+                                continuations.push_front({col_indeces[4], row_indeces[7], col_indeces[6], row_indeces[7]});
+                            }
+                        }
+                        if (castle_rights[1]) { //white long castle
+                            if (squares[7][3]==' ' && squares[7][2]==' ') {
+                                continuations.push_front({col_indeces[4], row_indeces[7], col_indeces[2], row_indeces[7]});
                             }
                         }
                         break;
@@ -595,6 +615,18 @@ class Board {
                                 }
                             }
                         }
+
+                        // Castling
+                        if (castle_rights[2]) { //black short castle
+                            if (squares[0][5]==' ' && squares[0][6]==' ') {
+                                continuations.push_front({col_indeces[4], row_indeces[0], col_indeces[6], row_indeces[0]});
+                            }
+                        }
+                        if (castle_rights[1]) { //black long castle
+                            if (squares[0][3]==' ' && squares[0][2]==' ') {
+                                continuations.push_front({col_indeces[4], row_indeces[0], col_indeces[2], row_indeces[0]});
+                            }
+                        }
                         break;
                     case 'K':
                         white_king_alive = true;
@@ -620,6 +652,13 @@ class Board {
     string get_previous_move() const {
         return previous_move;
     }
+
+    void print_continuations() {
+        for (const auto& s : continuations) {
+            cout << s << "->";
+        }
+        cout << endl;
+    }
 };
 
 extern "C" const char* get_move(const char* board_str) {
@@ -631,10 +670,15 @@ extern "C" const char* get_move(const char* board_str) {
             squares[i][j] = board_str[i*8 + j];
         }
     }
-    bool white_to_move = (board_str[64] == 'w');
+    bool white_to_move = board_str[64] == 'w';
+    bool castle_rights[4];
+    for (int i=65; i<69; i++) {
+        castle_rights[i-65] = board_str[i]=='T';
+    }
+    int en_passant_rights = board_str[69];
 
     int depth = 4;
-    Board board(&squares[0][0], string(), white_to_move, depth);
+    Board board(&squares[0][0], string(), white_to_move, castle_rights, en_passant_rights, depth);
 
     static string result_storage;
     double eval = board.get_evaluation();
@@ -654,10 +698,15 @@ extern "C" const char* get_move(const char* board_str) {
         }
     }
     bool white_to_move = (board_str[64] == 'w');
+    bool castle_rights[4];
+    for (int i=65; i<69; i++) {
+        castle_rights[i-65] = board_str[i]=='T';
+    }
+    int en_passant_rights = board_str[69];
 
     int depth = 4;
     cout << "running with depth " << depth << endl;
-    Board board(&squares[0][0], string(), white_to_move, depth);
+    Board board(&squares[0][0], string(), white_to_move, castle_rights, en_passant_rights, depth);
 
     static string result_storage;
     result_storage = board.get_best_continuation();
@@ -675,17 +724,19 @@ int main() {
         "        "
         "PPPPPPPP"
         "RNBQKBNR"
-        "w";
+        "w"
+        "TTTT8";
     string italian_pos =
         "r bqkbnr"
-        "pppp pp"
+        "pppp ppp"
         "  n     "
         "    p   "
         "  B P   " 
         "     N  "
         "PPPP PPP"
         "RNBQK  R"
-        "w";
+        "w"
+        "TTTT8";
     string midgame_pos =
         "rn    k "
         "p  prppp"
@@ -695,7 +746,8 @@ int main() {
         "  P   PN"
         "P  qP BP"
         "R    RK "
-        "w";
+        "w"
+        "FFFF8";
     string endgame_pos =
         "r       "
         "   R pkp"
@@ -705,7 +757,8 @@ int main() {
         "Pp    P "
         " P   PK "
         "        "
-        "w";
+        "w"
+        "FFFF8";
 
     //const char* result = get_move(king_capture_pos.c_str());
     //cout << "get_move returned: " << result << endl;
