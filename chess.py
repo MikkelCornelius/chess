@@ -61,7 +61,7 @@ def encode_board() -> str:
     for row in board:
         for piece in row:
             encoded += board_encoder[piece]
-    rights = ["T" if x else "F" for x in [w_long_castle_legal, w_short_castle_legal, b_long_castle_legal,b_short_castle_legal]]
+    rights = ''.join(["T" if x else "F" for x in [w_long_castle_legal, w_short_castle_legal, b_long_castle_legal,b_short_castle_legal]])
     return encoded+current_player+rights+str(en_passant_legal)
 
 def highlight(selected_tile: tuple):
