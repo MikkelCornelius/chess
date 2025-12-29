@@ -74,7 +74,6 @@ def highlight(selected_tile: tuple):
     screen.blit(overlay, rect.topleft)
 
 def legal_move(from_tile: tuple, to_tile: tuple) -> bool:
-    global en_passant
 
     selected_piece = board[from_tile[0]][from_tile[1]][1]  # Get piece type without color
     if selected_piece == 'P':  # Pawn movement
@@ -96,10 +95,8 @@ def legal_move(from_tile: tuple, to_tile: tuple) -> bool:
         # En passant
         if abs(to_tile[1] - from_tile[1]) == 1 and to_tile[0] == from_tile[0] - direction:
             if direction == 1 and to_tile[1] == en_passant_legal and to_tile[0] == 2:
-                en_passant = True
                 return True
             elif direction == -1 and to_tile[1] == en_passant_legal and to_tile[0] == 5:
-                en_passant = True
                 return True
         return False
     
@@ -185,7 +182,7 @@ def legal_move(from_tile: tuple, to_tile: tuple) -> bool:
     return False
 
 def move_piece(from_tile: tuple, to_tile: tuple):
-    global past_move, w_long_castle_legal, w_short_castle_legal, b_long_castle_legal, b_short_castle_legal, en_passant_legal, en_passant
+    global past_move, w_long_castle_legal, w_short_castle_legal, b_long_castle_legal, b_short_castle_legal, en_passant_legal
     piece = board[from_tile[0]][from_tile[1]]
     past_move = (from_tile, to_tile)
 
@@ -269,7 +266,6 @@ w_short_castle_legal = True
 b_long_castle_legal = True
 b_short_castle_legal = True
 en_passant_legal = 8 #8 out of bounds means not legal
-en_passant = False
 
 # This is vib coded shit. Had trouble with dependencies. For some reason it works now
 # Load bot with fallback: if the DLL (or its dependencies) aren't found,
