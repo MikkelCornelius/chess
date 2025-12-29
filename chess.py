@@ -1,9 +1,10 @@
 import pygame
 import ctypes
 import os
+import pathlib
 import time
 
-# TODO: Implement check, checkmate, stalemate, promotion, bugfix undo button for en passant and promotion
+# TODO: Implement check, checkmate, stalemate, promotion, bugfix undo button for en passant and promotion, make castle illigal when squares are threatned
 # TODO: Bot endgame depth, bot openings, bot message formatting, bot castling, bot en passant
 
 # GUI Constants
@@ -72,7 +73,7 @@ def highlight(selected_tile: tuple):
     screen.blit(overlay, rect.topleft)
 
 def legal_move(from_tile: tuple, to_tile: tuple) -> bool:
-    global castling, w_en_passant_legal, b_en_passant_legal, en_passant
+    global w_en_passant_legal, b_en_passant_legal, en_passant
 
     selected_piece = board[from_tile[0]][from_tile[1]][1]  # Get piece type without color
     if selected_piece == 'P':  # Pawn movement
@@ -166,20 +167,16 @@ def legal_move(from_tile: tuple, to_tile: tuple) -> bool:
             if board[from_tile[0]][from_tile[1]][0] == 'w' and from_tile[0] == 7:
                 if to_tile[1] == 6 and w_short_castle_legal:
                     if board[7][5] == '..' and board[7][6] == '..':
-                        castling = 'ws'
                         return True
                 elif to_tile[1] == 2 and w_long_castle_legal:
                     if board[7][1] == '..' and board[7][2] == '..' and board[7][3] == '..':
-                        castling = 'wl'
                         return True
             else:
                 if to_tile[1] == 6 and b_short_castle_legal:
                     if board[0][5] == '..' and board[0][6] == '..':
-                        castling = 'bs'
                         return True
                 elif to_tile[1] == 2 and b_long_castle_legal:
                     if board[0][1] == '..' and board[0][2] == '..' and board[0][3] == '..':
-                        castling = 'bl'
                         return True
         else:
             return False
@@ -187,7 +184,7 @@ def legal_move(from_tile: tuple, to_tile: tuple) -> bool:
     return False
 
 def move_piece(from_tile: tuple, to_tile: tuple):
-    global past_move, castling, w_long_castle_legal, w_short_castle_legal, b_long_castle_legal, b_short_castle_legal, b_en_passant_legal, w_en_passant_legal, en_passant
+    global past_move, w_long_castle_legal, w_short_castle_legal, b_long_castle_legal, b_short_castle_legal, b_en_passant_legal, w_en_passant_legal, en_passant
     piece = board[from_tile[0]][from_tile[1]]
     past_move = (from_tile, to_tile)
 
@@ -232,20 +229,12 @@ def move_piece(from_tile: tuple, to_tile: tuple):
         w_en_passant_legal = 8
 
     # Move rook if castling
-    if castling:
-        if castling == 'ws':
-            board[7][5] = 'wR'
-            board[7][7] = '..'
-        elif castling == 'wl':
-            board[7][3] = 'wR'
-            board[7][0] = '..'
-        elif castling == 'bs':
-            board[0][5] = 'bR'
-            board[0][7] = '..'
-        elif castling == 'bl':
-            board[0][3] = 'bR'
-            board[0][0] = '..'
-        castling = ''
+    if piece[1]=='K' and from_tile[1]-to_tile[1]==2: #short castle
+        board[from_tile[0]][to_tile[1]-1] = board[from_tile[0]][0]
+        board[from_tile[0]][0] = ".."
+    if piece[1]=='K' and from_tile[1]-to_tile[1]==-2: #long castle
+        board[from_tile[0]][to_tile[1]-1] = board[from_tile[0]][7]
+        board[from_tile[0]][7] = ".."
 
     # Update castling rights
     if piece == 'wK':
@@ -277,7 +266,6 @@ w_long_castle_legal = True
 w_short_castle_legal = True
 b_long_castle_legal = True
 b_short_castle_legal = True
-castling = ''
 w_en_passant_legal = 8 #8 out of bounds means not legal
 b_en_passant_legal = 8
 en_passant = False
@@ -450,8 +438,9 @@ player = 'w'
 draw_board()
 
 # main menu
-start_button1_rect = make_textbox(4*TILE_SIZE-150, 300, 300, 100, "Single player")
-start_button2_rect = make_textbox(4*TILE_SIZE-150, 450, 300, 100, "Multiplayer")
+start_button1_rect = make_textbox(4*TILE_SIZE-150, 300, 300, 50, "Single player")
+start_button2_rect = make_textbox(4*TILE_SIZE-150, 400, 300, 50, "Multiplayer")
+start_button3_rect = make_textbox(4*TILE_SIZE-150, 500, 300, 50, "Replay")
 pygame.display.flip()
 while running:
     for event in pygame.event.get():
@@ -463,9 +452,15 @@ while running:
             if event.button == 1:
                 if start_button1_rect.collidepoint(event.pos):
                     singleplayer = True
+                    replay = False
                     running = False
                 if start_button2_rect.collidepoint(event.pos):
                     singleplayer = False
+                    replay = False
+                    running = False
+                if start_button3_rect.collidepoint(event.pos):
+                    singleplayer = False
+                    replay = True
                     running = False
 
 # Select player
@@ -495,8 +490,75 @@ if singleplayer:
                         mx, my = event.pos
                         player = ['w','b'][(mx*my)%2]
                         running = False
-else: #always play from white perspective when multiplayer
+
+# Select game to replay
+elif replay:
+    save_games = [p.name for p in pathlib.Path("past games").iterdir()]
+    save_games.sort()
+    replay_menu_buttons = []
+    draw_board()
+    for i in range(len(save_games)):
+        replay_menu_buttons.append(make_textbox(4*TILE_SIZE-150, 200+i*100, 300, 50, save_games[i]))
+    pygame.display.flip()
+    running = True
+
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+                exit()
+            
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:
+                    for game in range(len(save_games)):
+                        if replay_menu_buttons[game].collidepoint(event.pos):
+                            replay_game = save_games[game]
+                            player = 'w'
+                            running = False
+
+# Always play from white perspective when multiplayer
+else:
     player = 'w'
+
+# If replaying, play the replay loop and terminate the program
+if replay:
+    with open(f"past games/{replay_game}", "r") as file:
+        line = file.readline().strip()
+        moves = [((row_indices[move[1]], col_indices[move[0]]), (row_indices[move[3]], col_indices[move[2]])) for move in line.split("->")]
+    move = 0
+    
+    next_mv_button_rect = make_textbox(125, BOARD_SIZE+2*UI_HEIGHT, 100, 30, "next")
+    running = True
+    draw_board()
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+                exit()
+            
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:
+                    if next_mv_button_rect.collidepoint(event.pos):
+                        move_piece(*(moves[move]))
+                        move += 1 #next move
+                        draw_board()
+                    if undo_button_rect.collidepoint(event.pos):
+                        if history:
+                            from_tile = history[-1][0]
+                            to_tile = history[-1][1]
+                            captured = history[-1][2]
+                            board[from_tile[0]][from_tile[1]] = board[to_tile[0]][to_tile[1]]
+                            board[to_tile[0]][to_tile[1]] = captured
+                            history.pop()
+
+                            if history: #update last move
+                                past_move = history[-1]
+                            else:
+                                past_move = None
+                            move -= 1
+                            draw_board()
+    exit()
+
 
 # Start game
 draw_board()
