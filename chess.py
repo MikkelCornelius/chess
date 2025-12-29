@@ -61,7 +61,8 @@ def encode_board() -> str:
     for row in board:
         for piece in row:
             encoded += board_encoder[piece]
-    return encoded+current_player
+    rights = ["T" if x else "F" for x in [w_long_castle_legal, w_short_castle_legal, b_long_castle_legal,b_short_castle_legal]]
+    return encoded+current_player+rights+str(en_passant_legal)
 
 def highlight(selected_tile: tuple):
     if player=='w':
@@ -73,7 +74,7 @@ def highlight(selected_tile: tuple):
     screen.blit(overlay, rect.topleft)
 
 def legal_move(from_tile: tuple, to_tile: tuple) -> bool:
-    global w_en_passant_legal, b_en_passant_legal, en_passant
+    global en_passant
 
     selected_piece = board[from_tile[0]][from_tile[1]][1]  # Get piece type without color
     if selected_piece == 'P':  # Pawn movement
@@ -94,10 +95,10 @@ def legal_move(from_tile: tuple, to_tile: tuple) -> bool:
                 return True
         # En passant
         if abs(to_tile[1] - from_tile[1]) == 1 and to_tile[0] == from_tile[0] - direction:
-            if direction == 1 and to_tile[1] == w_en_passant_legal and to_tile[0] == 2:
+            if direction == 1 and to_tile[1] == en_passant_legal and to_tile[0] == 2:
                 en_passant = True
                 return True
-            elif direction == -1 and to_tile[1] == b_en_passant_legal and to_tile[0] == 5:
+            elif direction == -1 and to_tile[1] == en_passant_legal and to_tile[0] == 5:
                 en_passant = True
                 return True
         return False
@@ -184,7 +185,7 @@ def legal_move(from_tile: tuple, to_tile: tuple) -> bool:
     return False
 
 def move_piece(from_tile: tuple, to_tile: tuple):
-    global past_move, w_long_castle_legal, w_short_castle_legal, b_long_castle_legal, b_short_castle_legal, b_en_passant_legal, w_en_passant_legal, en_passant
+    global past_move, w_long_castle_legal, w_short_castle_legal, b_long_castle_legal, b_short_castle_legal, en_passant_legal, en_passant
     piece = board[from_tile[0]][from_tile[1]]
     past_move = (from_tile, to_tile)
 
@@ -207,26 +208,21 @@ def move_piece(from_tile: tuple, to_tile: tuple):
             w_captured_pieces['bQ'] -= 1
 
     # Handle en passant capture
-    if en_passant:
-        if piece[0] == 'w': #white pawn moved
-            board[to_tile[0]+1][to_tile[1]] = '..' #remove black pawn
-        else: #black pawn moved
-            board[to_tile[0]-1][to_tile[1]] = '..' #remove white pawn
-        en_passant = False
-
+    #if pawn moves to an empty square, remove piece behind pawn (if any)
+    w_en_passant = False
+    b_en_passant = False
+    if piece=='wP' and board[to_tile[0]][to_tile[1]]=="..":
+        w_en_passant = True
+    if piece=='bP' and board[to_tile[0]][to_tile[1]]=="..":
+        b_en_passant = True
+    #has to be done at the bottom, after "# Move"
+    
     # Update en passant rights
         # Set new en passant
     if piece[1] == 'P' and abs(from_tile[0]-to_tile[0])>1: #if en passant
-        if piece[0] == 'w':
-            b_en_passant_legal = to_tile[1]
-        else:
-            w_en_passant_legal = to_tile[1]
-
-        # Reset en passant
-    if piece[0] == 'b': #if black moved, reset black's en passant rights, else reset white
-        b_en_passant_legal = 8 #8 out of bounds means not legal
+        en_passant_legal = to_tile[1]
     else:
-        w_en_passant_legal = 8
+        en_passant_legal = 8
 
     # Move rook if castling
     if piece[1]=='K' and from_tile[1]-to_tile[1]==2: #short castle
@@ -261,13 +257,18 @@ def move_piece(from_tile: tuple, to_tile: tuple):
     board[to_tile[0]][to_tile[1]] = board[from_tile[0]][from_tile[1]]
     board[from_tile[0]][from_tile[1]] = '..'
 
+    # Finally en passant
+    if w_en_passant:
+        board[to_tile[0]+1][to_tile[1]] = '..' #remove black pawn
+    if b_en_passant:
+        board[to_tile[0]-1][to_tile[1]] = '..' #remove white pawn
+
 #
 w_long_castle_legal = True
 w_short_castle_legal = True
 b_long_castle_legal = True
 b_short_castle_legal = True
-w_en_passant_legal = 8 #8 out of bounds means not legal
-b_en_passant_legal = 8
+en_passant_legal = 8 #8 out of bounds means not legal
 en_passant = False
 
 # This is vib coded shit. Had trouble with dependencies. For some reason it works now
