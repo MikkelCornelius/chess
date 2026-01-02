@@ -2,7 +2,6 @@
 #include <forward_list>
 #include <vector>
 #include <memory>
-//#include <format>
 #include <iostream>
 
 using namespace std;
@@ -165,7 +164,7 @@ class Board {
                 squares[i][j] = init_squares[i*8 + j];
         this->previous_move = previous_move;
         this->white_to_move = init_white_to_move;
-        for (int i=0; i<4; i++) {this->castle_rights[0] = castle_rights[0];}
+        for (int i=0; i<4; i++) {this->castle_rights[i] = castle_rights[i];}
         this->en_passant_rights = en_passant_rights;
 
         if (depth == 0) {
@@ -180,16 +179,18 @@ class Board {
             boards.reserve(num_continuations); //set length of array
 
             // Create all boards and store pointers
-            int i = 0;
             for (const string& current_move : continuations) {
-                char* buf = move(current_move);
+                char* buf;
+                bool* new_castle_rights;
+                int new_en_passant_rights;
+                tie(buf, new_castle_rights, new_en_passant_rights) = move(current_move);
+
                 boards.emplace_back(make_unique<Board>(buf, current_move, !white_to_move, castle_rights, en_passant_rights, depth-1));
                 delete [] buf;
 
                 if (depth == 1) {
                     boards.back()->evaluate(); //evaluate boards of depth 0
                 }
-                i++;
             }
 
             // Find best continuation
@@ -229,7 +230,7 @@ class Board {
                     // Get evaluation of each child board
                     board_eval = board->get_evaluation();
 
-                    // If forced mate, find fastest mate. eval==1000.0 mean no king. Eval 1000.0-n mean mate in n moves
+                    // If forced mate, find fastest mate. eval==1000.0 means no king. Eval 1000.0-n means mate in n moves
                     if (board_eval > 900.0) {
                         if (continuations.front() != "a1a1") { //ignore dummy move
                             board_eval -= 1;
@@ -257,7 +258,7 @@ class Board {
         }
     }
 
-    char* move(string current_move) {
+    std::tuple<char*, bool*, int> move(string current_move) {
         // Create copy of board
         char* new_board = new char[64];
         for (int i = 0; i < 8; ++i)
@@ -300,9 +301,9 @@ class Board {
                 new_board[to_row * 8 + to_col] = 'q';
             }
         case 'e': //en passant
-            if (isupper(new_board[to_row * 8 + to_col])) {
-                new_board[to_row + 1 * 8 + to_col] = ' '; //remove captured pawn
-            } else {
+            if (isupper(new_board[to_row * 8 + to_col])) { //white
+                new_board[(to_row + 1) * 8 + to_col] = ' '; //remove captured pawn
+            } else { //black
                 new_board[to_row - 1 * 8 + to_col] = ' ';
             }
             break;
@@ -315,7 +316,39 @@ class Board {
                 new_board[to_row * 8 + 0] = ' ';
             }
         }
-        return new_board;
+
+        // Make castling rights
+        bool new_castle_rights[4];
+        for (int i=0; i<4; i++) {new_castle_rights[i] = castle_rights[i];}
+        if (new_board[to_row * 8 + to_col]=='K') { //remove castle rights for white when the king moves
+            new_castle_rights[0] = false;
+            new_castle_rights[1] = false;
+        } else if (new_board[to_row * 8 + to_col]=='k') { //for black
+            new_castle_rights[2] = false;
+            new_castle_rights[3] = false;
+        } else if (new_board[to_row * 8 + to_col]=='R') { //white rook
+            if (from_col==7) {
+                new_castle_rights[0] = false; //remove short castle rights when king side rook moves
+            } else if (from_col==0) {
+                new_castle_rights[1] = false; //or long castle
+            }
+        } else if (new_board[to_row * 8 + to_col]=='r') { //black rook
+            if (from_col==7) {
+                new_castle_rights[0] = false;
+            } else if (from_col==0) {
+                new_castle_rights[1] = false;
+            }
+        }
+
+        // Make en passant rights
+        int new_en_passant_rights;
+        if ((new_board[to_row * 8 + to_col]=='P' && to_row-from_row==-2) || (new_board[to_row * 8 + to_col]=='p' && to_row-from_row==2)) {
+            new_en_passant_rights = to_col;
+        } else {
+            new_en_passant_rights = 8;
+        }
+
+        return {new_board, new_castle_rights, new_en_passant_rights};
     }
 
     void evaluate() {
@@ -367,12 +400,12 @@ class Board {
                         }
                         // captures
                         if (j-1 >= 0) {
-                            if (black_pieces.find(squares[i-1][j-1]) != string::npos) {
+                            if (black_pieces.find(squares[i-1][j-1]) != string::npos || (en_passant_rights==j-1 && i==3)) {
                                 continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[j-1], row_indeces[i-1]});
                             }
                         }
                         if (j+1 < 8) {
-                            if (black_pieces.find(squares[i-1][j+1]) != string::npos) {
+                            if (black_pieces.find(squares[i-1][j+1]) != string::npos || (en_passant_rights==j+1 && i==3)) {
                                 continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[j+1], row_indeces[i-1]});
                             }
                         }
@@ -506,17 +539,18 @@ class Board {
                         if (squares[i+1][j]==' ') {
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[j], row_indeces[i+1]});
                         }
-                        if (i==1 && squares[i+1][j]==' ' && squares[i+2][j]==' ') { //double move
+                        // double move
+                        if (i==1 && squares[i+1][j]==' ' && squares[i+2][j]==' ') {
                             continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[j], row_indeces[i+2]});
                         }
                         // captures
                         if (j-1 >= 0) {
-                            if (white_pieces.find(squares[i+1][j-1]) != string::npos) {
+                            if (white_pieces.find(squares[i+1][j-1]) != string::npos || (en_passant_rights==j-1 && i==4)) {
                                 continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[j-1], row_indeces[i+1]});
                             }
                         }
                         if (j+1 < 8) {
-                            if (white_pieces.find(squares[i+1][j+1]) != string::npos) {
+                            if (white_pieces.find(squares[i+1][j+1]) != string::npos || (en_passant_rights==j-1 && i==4)) {
                                 continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[j+1], row_indeces[i+1]});
                             }
                         }
@@ -622,7 +656,7 @@ class Board {
                                 continuations.push_front({col_indeces[4], row_indeces[0], col_indeces[6], row_indeces[0]});
                             }
                         }
-                        if (castle_rights[1]) { //black long castle
+                        if (castle_rights[3]) { //black long castle
                             if (squares[0][3]==' ' && squares[0][2]==' ') {
                                 continuations.push_front({col_indeces[4], row_indeces[0], col_indeces[2], row_indeces[0]});
                             }
@@ -670,12 +704,13 @@ extern "C" const char* get_move(const char* board_str) {
             squares[i][j] = board_str[i*8 + j];
         }
     }
-    bool white_to_move = board_str[64] == 'w';
+    bool white_to_move = (board_str[64] == 'w');
     bool castle_rights[4];
     for (int i=65; i<69; i++) {
         castle_rights[i-65] = board_str[i]=='T';
     }
-    int en_passant_rights = board_str[69];
+    char en_passant_rights_char = board_str[69];
+    int en_passant_rights = en_passant_rights_char - '0';
 
     int depth = 4;
     Board board(&squares[0][0], string(), white_to_move, castle_rights, en_passant_rights, depth);
@@ -702,11 +737,13 @@ extern "C" const char* get_move(const char* board_str) {
     for (int i=65; i<69; i++) {
         castle_rights[i-65] = board_str[i]=='T';
     }
-    int en_passant_rights = board_str[69];
+    char en_passant_rights_char = board_str[69];
+    int en_passant_rights = en_passant_rights_char - '0';
 
-    int depth = 4;
+    int depth = 1;
     cout << "running with depth " << depth << endl;
     Board board(&squares[0][0], string(), white_to_move, castle_rights, en_passant_rights, depth);
+    board.print_continuations();
 
     static string result_storage;
     result_storage = board.get_best_continuation();
@@ -735,7 +772,7 @@ int main() {
         "     N  "
         "PPPP PPP"
         "RNBQK  R"
-        "w"
+        "b"
         "TTTT8";
     string midgame_pos =
         "rn    k "
@@ -759,9 +796,20 @@ int main() {
         "        "
         "w"
         "FFFF8";
+    string en_pas_pos =
+        "r bqkbnr"
+        "pppn  pp"
+        "   p p  "
+        "   Pp   "
+        "        " 
+        "        "
+        "PPP PPPP"
+        "RNBQKBNR"
+        "w"
+        "TTTT4";
 
-    //const char* result = get_move(king_capture_pos.c_str());
-    //cout << "get_move returned: " << result << endl;
+    const char* result = get_move(en_pas_pos.c_str());
+    cout << "get_move returned: " << result << endl;
 
     clock_t start_time;
     clock_t end_time;

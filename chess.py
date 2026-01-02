@@ -4,8 +4,10 @@ import os
 import pathlib
 import time
 
-# TODO: Implement check, checkmate, stalemate, promotion, bugfix undo button for en passant and promotion, make castle illigal when squares are threatned
-# TODO: Bot endgame depth, bot openings, bot message formatting, bot en passant
+# TODO: Implement check, checkmate, stalemate, full promotion, make castle illigal when squares are threatned
+# TODO: Bot endgame depth, bot openings, bot message formatting
+# TODO: How to make tests, how to investigate performance, investigate agile violations
+# TODO: Bot en passant (done untested), bugfix undo button for en passant and promotion
 
 # GUI Constants
 TILE_SIZE = 80
@@ -627,7 +629,7 @@ while running:
 pygame.quit()
 
 # Save game
-count = 0
+'''count = 0
 while os.path.exists("past games/untitled game"+str(count)):
     count += 1
 
@@ -638,4 +640,4 @@ with open("past games/untitled game"+str(count), "w") as file:
         file.write(col_labels[from_tile[1]]+row_labels[from_tile[0]]+col_labels[to_tile[1]]+row_labels[to_tile[0]]+"->")
     from_tile = history[-1][0]
     to_tile = history[-1][1]
-    file.write(col_labels[from_tile[1]]+row_labels[from_tile[0]]+col_labels[to_tile[1]]+row_labels[to_tile[0]])
+    file.write(col_labels[from_tile[1]]+row_labels[from_tile[0]]+col_labels[to_tile[1]]+row_labels[to_tile[0]])'''
