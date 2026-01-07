@@ -550,7 +550,7 @@ class Board {
                             }
                         }
                         if (j+1 < 8) {
-                            if (white_pieces.find(squares[i+1][j+1]) != string::npos || (en_passant_rights==j-1 && i==4)) {
+                            if (white_pieces.find(squares[i+1][j+1]) != string::npos || (en_passant_rights==j+1 && i==4)) {
                                 continuations.push_front({col_indeces[j], row_indeces[i], col_indeces[j+1], row_indeces[i+1]});
                             }
                         }
@@ -695,7 +695,7 @@ class Board {
     }
 };
 
-extern "C" const char* get_move(const char* board_str) {
+/*extern "C" const char* get_move(const char* board_str) {
     if (!board_str) return nullptr;
 
     char squares[8][8];
@@ -720,10 +720,10 @@ extern "C" const char* get_move(const char* board_str) {
     string formatted_eval = (eval<0) ? "-"+to_string(abs(eval)) : "+"+to_string(abs(eval));
     result_storage = board.get_best_continuation().substr(2) + formatted_eval;
     return result_storage.c_str();
-}
+}*/
 
 //FOR TESTING
-/*const char* get_move(const char* board_str) {
+const char* get_move(const char* board_str) {
     if (!board_str) return nullptr;
 
     char squares[8][8];
@@ -740,10 +740,9 @@ extern "C" const char* get_move(const char* board_str) {
     char en_passant_rights_char = board_str[69];
     int en_passant_rights = en_passant_rights_char - '0';
 
-    int depth = 1;
+    int depth = 4;
     cout << "running with depth " << depth << endl;
     Board board(&squares[0][0], string(), white_to_move, castle_rights, en_passant_rights, depth);
-    board.print_continuations();
 
     static string result_storage;
     result_storage = board.get_best_continuation();
@@ -808,8 +807,8 @@ int main() {
         "w"
         "TTTT4";
 
-    const char* result = get_move(en_pas_pos.c_str());
-    cout << "get_move returned: " << result << endl;
+    //const char* result = get_move(en_pas_pos.c_str());
+    //cout << "get_move returned: " << result << endl;
 
     clock_t start_time;
     clock_t end_time;
@@ -822,4 +821,4 @@ int main() {
     }
 
     return 0;
-}*/
+}
