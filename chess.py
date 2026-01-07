@@ -6,8 +6,8 @@ import time
 
 # TODO: Implement check, checkmate, stalemate, full promotion, make castle illigal when squares are threatned
 # TODO: Bot endgame depth, bot openings, bot message formatting
-# TODO: How to make tests, how to investigate performance, investigate agile violations
-# TODO: Bot en passant (done untested), bugfix undo button for en passant and promotion
+# TODO: Investigate performance
+# TODO: Bugfix undo button for en passant and promotion
 
 # GUI Constants
 TILE_SIZE = 80
