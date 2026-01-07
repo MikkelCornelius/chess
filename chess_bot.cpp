@@ -467,7 +467,7 @@ public:
             } 
         }
         if (!(white_king_alive && black_king_alive)) {
-            moves.clear(); //no legal moves if a king is missing
+            moves.clear(); //can't play when a king is missing
             moves.push_front("a1a1"); //dummy move, does nothing
         }
 
