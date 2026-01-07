@@ -34,4 +34,6 @@ public:
     void print_continuations();
 };
 
+extern "C" const char* get_move(const char* board_str);
+
 #endif

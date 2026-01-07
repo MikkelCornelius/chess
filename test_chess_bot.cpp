@@ -2,6 +2,8 @@
 #include <cassert>
 #include "chess_bot.h"
 
+using namespace std;
+
 // Compile with: g++ -std=c++20 -o test_chess_bot.out test_chess_bot.cpp chess_bot.cpp
 
 void test_evaluator() {
@@ -96,7 +98,7 @@ void test_evaluator() {
     score = Evaluator::evaluate(board3);
     assert(abs(score - (-3.5)) < tolerance); // Expected score based on material and position
 
-    std::cout << "Evaluator tests passed!" << std::endl;
+    cout << "Evaluator tests passed!" << endl;
 }
 
 void test_move_generator() {
@@ -179,12 +181,12 @@ void test_move_generator() {
     assert(found_e1g1);
     assert(found_a5b6);
 
-    std::cout << "Move generator tests passed!" << std::endl;
+    cout << "Move generator tests passed!" << endl;
 }
 
 void test_bot() {
     // Test for checkmate
-    std::cout << "Testing bot for checkmate scenario..." << std::endl;
+    cout << "Testing bot for checkmate scenario..." << endl;
     char squares[8][8] = {
         {' ', 'k', ' ', ' ', ' ', ' ', ' ', ' '},
         {'p', 'p', 'p', ' ', ' ', ' ', ' ', ' '},
@@ -200,17 +202,16 @@ void test_bot() {
 
     Board board(&squares[0][0], "", true, castle_rights, en_passant_rights, 3);
 
-    std::string move = board.get_best_continuation().substr(2,4);
+    string move = board.get_best_continuation().substr(2,4);
     assert(move == "h3h8"); // Rook moves to h8 to deliver checkmate
 
-    std::cout << "Checkmate test passed!" << std::endl;
-    
+    cout << "Checkmate test passed!" << endl;
 }
 
 int main() {
     test_evaluator();
     test_move_generator();
     test_bot();
-    std::cout << "All tests passed!" << std::endl;
+    cout << "All tests passed!" << endl;
     return 0;
 }
