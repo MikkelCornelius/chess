@@ -29,7 +29,6 @@ class Evaluator {
         {0.5, 1.0, 1.0,-2.0,-2.0, 1.0, 1.0, 0.5},
         {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}
     };
-
     static constexpr double knight_eval[8][8] = {
         {-5.0,-4.0,-3.0,-3.0,-3.0,-3.0,-4.0,-5.0},
         {-4.0,-2.0, 0.0, 0.0, 0.0, 0.0,-2.0,-4.0},
@@ -72,7 +71,6 @@ class Evaluator {
     };
 
     public:
-
     static double evaluate(char squares[8][8]) {
         bool w_king_alive = false;
         bool b_king_alive = false;
@@ -96,6 +94,7 @@ class Evaluator {
                 }
             }
         }
+
         if (!w_king_alive) {return -1000.0;}
         else if (!b_king_alive) {return 1000.0;}
         else {return score;}
@@ -526,6 +525,7 @@ class Board {
 
             // Find best continuation
             double board_eval;
+            bool first_child = true;
             this->eval = (white_to_move) ? -800.0 : 800.0; //initialize eval to extreme value
             for (const auto& board : boards) {
                 // Get evaluation of each child board
@@ -544,13 +544,14 @@ class Board {
                 }
                 
                 // Find min/max eval
-                if (board_eval > this->eval && white_to_move) {//max for white
+                if ((board_eval > this->eval || first_child) && white_to_move) {//max for white
                     this->eval = board_eval;
                     this->best_continuation = previous_move+"->"+board->get_best_continuation();
-                } else if (board_eval < this->eval && !white_to_move) {//min for black
+                } else if ((board_eval < this->eval || first_child) && !white_to_move) {//min for black
                     this->eval = board_eval;
                     this->best_continuation = previous_move+"->"+board->get_best_continuation();
                 }
+                first_child = false;
             }
         }
     }
@@ -672,7 +673,7 @@ class Board {
     }
 };
 
-/*extern "C" const char* get_move(const char* board_str) {
+extern "C" const char* get_move(const char* board_str) {
     if (!board_str) return nullptr;
 
     char squares[8][8];
@@ -697,10 +698,10 @@ class Board {
     string formatted_eval = (eval<0) ? "-"+to_string(abs(eval)) : "+"+to_string(abs(eval));
     result_storage = board.get_best_continuation().substr(2) + formatted_eval;
     return result_storage.c_str();
-}*/
+}
 
 //FOR TESTING
-const char* get_move(const char* board_str) {
+/*const char* get_move(const char* board_str) {
     if (!board_str) return nullptr;
 
     char squares[8][8];
@@ -798,4 +799,4 @@ int main() {
     }
 
     return 0;
-}
+}*/
