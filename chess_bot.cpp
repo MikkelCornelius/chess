@@ -515,8 +515,9 @@ class Board {
                 int new_en_passant_rights;
                 tie(buf, new_castle_rights, new_en_passant_rights) = move(current_move);
 
-                boards.emplace_back(make_unique<Board>(buf, current_move, !white_to_move, castle_rights, en_passant_rights, depth-1));
+                boards.emplace_back(make_unique<Board>(buf, current_move, !white_to_move, new_castle_rights, new_en_passant_rights, depth-1));
                 delete [] buf;
+                delete [] new_castle_rights;
 
                 if (depth == 1) {
                     boards.back()->set_evaluation(); //evaluate boards of depth 0
@@ -598,11 +599,12 @@ class Board {
             } else {
                 new_board[to_row * 8 + to_col] = 'q';
             }
+            break;
         case 'e': //en passant
             if (isupper(new_board[to_row * 8 + to_col])) { //white
                 new_board[(to_row + 1) * 8 + to_col] = ' '; //remove captured pawn
             } else { //black
-                new_board[to_row - 1 * 8 + to_col] = ' ';
+                new_board[(to_row - 1) * 8 + to_col] = ' ';
             }
             break;
         case 'c': //castling
@@ -616,7 +618,7 @@ class Board {
         }
 
         // Make castling rights
-        bool new_castle_rights[4];
+        bool* new_castle_rights = new bool[4];
         for (int i=0; i<4; i++) {new_castle_rights[i] = castle_rights[i];}
         if (new_board[to_row * 8 + to_col]=='K') { //remove castle rights for white when the king moves
             new_castle_rights[0] = false;
