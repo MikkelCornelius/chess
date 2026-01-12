@@ -5,8 +5,7 @@
 
 using namespace std;
 
-// Compile with: g++ -std=c++20 -o bot_benchmark.out bot_benchmark.cpp chess_bot.cpp
-
+// Compile with: g++ -std=c++20 -o bot_benchmark.exe test/bot_benchmark.cpp src/chess_bot.cpp
 int main() {
     string start_pos =
         "rnbqkbnr"

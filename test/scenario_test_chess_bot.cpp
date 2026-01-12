@@ -1,9 +1,11 @@
 #include <iostream>
-#include "../include/chess_bot.h"
+#include <string>
+#include "../include/board.h"
 
 using namespace std;
 
-// Compile with: g++ -std=c++20 -o test_chess_bot.exe scenario_test_chess_bot.cpp src/chess_bot.cpp
+// Compile with: g++ -std=c++20 -o test_chess_bot.exe .\test\scenario_test_chess_bot.cpp .\src\board.cpp .\src\evaluator.cpp .\src\moveGenerator.cpp
+
 int main() {
 
     char squares[8][8] = {
@@ -20,8 +22,8 @@ int main() {
     int en_passant_rights = 8;
     bool white_to_move = false;
 
-    Board board(&squares[0][0], "", white_to_move, castle_rights, en_passant_rights, 1);
-    string move = board.get_best_continuation();
+    Board board(&squares[0][0], "", white_to_move, castle_rights, en_passant_rights, 4);
+    string move = board.get_best_continuation().substr(2, 4);
     cout << "^-^Bot recommends move: " << move << endl;
     cout << "Stockfish recommends move: d8e7" << endl;
 
