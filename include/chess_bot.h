@@ -3,8 +3,6 @@
 
 #include <string>
 #include <forward_list>
-#include <vector>
-#include <memory>
 #include <tuple>
 
 class Evaluator {

@@ -273,7 +273,7 @@ en_passant_legal = 8 #8 out of bounds means not legal
 # Load bot with fallback: if the DLL (or its dependencies) aren't found,
 # try adding common MSYS2 runtime directories to the process DLL search path
 def _load_bot_dll():
-    dll_rel = os.path.join(os.path.dirname(__file__), 'chessbot.dll')
+    dll_rel = os.path.join(os.path.dirname(__file__), "..", 'chessbot.dll')
     # prefer the explicit full path
     dll_path = os.path.abspath(dll_rel)
     try:
@@ -315,19 +315,27 @@ bot.get_move.argtypes = [ctypes.c_char_p]
 
 def get_bot_move():
     global current_player
+
+    # Get bot move
     print("\nBot is thinking..")
     time_point = time.time()
     bot_response = bot.get_move(encode_board().encode()).decode('utf-8')
     think_time = time.time() - time_point
     print("Bot thought for:", round(think_time*1000), "ms")
+
+    # Parse bot response
     bot_move = bot_response[:4]
     continuation = bot_response[6:-6]
     evaluation = bot_response[-6:]
-    print("Bot move:", bot_move)
+    
+    # Make bot move
     from_pos = (row_indices[bot_move[1]], col_indices[bot_move[0]])
     to_pos = (row_indices[bot_move[3]], col_indices[bot_move[2]])
     move_piece(from_pos, to_pos)
     current_player = 'b' if current_player == 'w' else 'w'
+
+    # Print bot info
+    print("Bot move:", bot_move)
     print("white to move" if current_player=='w' else "black to move")
     print("Best continuation:", continuation, "Eval:", evaluation[0]+str(float(evaluation[1:])), end='\n\n')
 
@@ -487,7 +495,7 @@ if singleplayer:
                     if r_player_button_rect.collidepoint(event.pos):
                         #simple random number generator
                         mx, my = event.pos
-                        player = ['w','b'][(mx*my)%2]
+                        player = ['w','b'][(mx+my)%2]
                         running = False
 
 # Select game to replay
