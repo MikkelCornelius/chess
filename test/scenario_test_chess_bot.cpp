@@ -1,10 +1,9 @@
 #include <iostream>
-#include "chess_bot.h"
+#include "../include/chess_bot.h"
 
 using namespace std;
 
-// Compile with: g++ -std=c++20 -o test_chess_bot.out scenario_test_chess_bot.cpp chess_bot.cpp
-
+// Compile with: g++ -std=c++20 -o test_chess_bot.exe scenario_test_chess_bot.cpp src/chess_bot.cpp
 int main() {
 
     char squares[8][8] = {

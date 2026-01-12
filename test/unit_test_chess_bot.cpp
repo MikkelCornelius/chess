@@ -1,10 +1,10 @@
 #include <iostream>
 #include <cassert>
-#include "chess_bot.h"
+#include "../include/chess_bot.h"
 
 using namespace std;
 
-// Compile with: g++ -std=c++20 -o test_chess_bot.out unit_test_chess_bot.cpp chess_bot.cpp
+// Compile with: g++ -std=c++20 -o test_chess_bot.exe test/unit_test_chess_bot.cpp src/chess_bot.cpp
 
 void test_evaluator() {
     double tolerance = 0.0001; //use tolerance for floating point rounding errors

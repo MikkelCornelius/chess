@@ -6,7 +6,7 @@
 
 using namespace std;
 
-// compile with: g++ -std=c++20 -shared -fPIC -o chessbot.dll chess_bot.cpp
+// compile with: g++ -std=c++20 -shared -fPIC -o .\src\chessbot.dll .\src\chess_bot.cpp
 // for tests: g++ -std=c++20 -o chessbot.out chess_bot.cpp
 
 constexpr char col_indeces[8] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'};

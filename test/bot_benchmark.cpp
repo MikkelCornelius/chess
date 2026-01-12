@@ -1,7 +1,7 @@
 #include <iostream>
 #include <ctime>
 #include <string>
-#include "chess_bot.h"
+#include "../include/chess_bot.h"
 
 using namespace std;
 
