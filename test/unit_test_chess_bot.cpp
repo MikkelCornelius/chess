@@ -57,9 +57,9 @@ void test_evaluator() {
     assert(abs(score - (9.0 + 0.5)) < tolerance); // queen value + position bonus for e4
 
     // Test king evaluation
-    board[4][4] = 'K';
-    score = Evaluator::evaluate_king(4, 4, board, true);
-    assert(abs(score - (0.0 + (-4.0))) < tolerance); // king value + position bonus for e4
+    board[7][1] = 'K';
+    score = Evaluator::evaluate_king(7, 1, board, true);
+    assert(abs(score - (0.0 + (3.0))) < tolerance); // king value + position bonus for e4
 
     // Test overall evaluation
     char board2[8][8] = {
@@ -98,7 +98,7 @@ void test_evaluator() {
     };
 
     score = Evaluator::evaluate(board3);
-    assert(abs(score - (-3.5)) < tolerance); // Expected score based on material and position
+    assert(abs(score - (-3.0)) < tolerance); // Expected score based on material and position
 
     //Board 4, 5 and 6 are evaluated very badly by the evaluator. Position should be closer to -1.0
     char board4[8][8] = {
@@ -112,7 +112,7 @@ void test_evaluator() {
         {'R', ' ', 'B', ' ', 'K', ' ', ' ', 'R'}
     };
     score = Evaluator::evaluate(board4);
-    assert(abs(score - (-7.0)) < tolerance); // Expected score based on material and position
+    assert(abs(score - (-6.9)) < tolerance); // Expected score based on material and position
 
     char board5[8][8] = {
         {'r', ' ', ' ', ' ', 'k', ' ', ' ', 'r'},
@@ -125,7 +125,7 @@ void test_evaluator() {
         {'R', ' ', 'B', ' ', 'K', ' ', ' ', 'R'}
     };
     score = Evaluator::evaluate(board5);
-    assert(abs(score - (-6.9)) < tolerance); // Expected score based on material and position
+    assert(abs(score - (-6.8)) < tolerance); // Expected score based on material and position
 
     char board6[8][8] = {
         {'r', ' ', 'q', ' ', ' ', 'r', 'k', ' '},
@@ -138,7 +138,7 @@ void test_evaluator() {
         {'R', ' ', 'B', ' ', 'K', ' ', ' ', 'R'}
     };
     score = Evaluator::evaluate(board6);
-    assert(abs(score - (-11.5)) < tolerance); // Expected score based on material and position
+    assert(abs(score - (-12.5)) < tolerance); // Expected score based on material and position
 
     cout << "Evaluator tests passed!" << endl;
 }

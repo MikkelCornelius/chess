@@ -58,7 +58,7 @@ double Evaluator::evaluate_bishop(int row, int col, char squares[8][8]) {
 double Evaluator::evaluate_rook(int row, int col, char squares[8][8]) {
     double score = 4.0;
     
-    // Evaluate on number of controled sqaures
+    // Evaluate on number of controled squares
     int i = row-1;
     while (i >= 0 && squares[i][col] == ' ') {
         score += 0.2;
@@ -93,9 +93,39 @@ double Evaluator::evaluate_king(int row, int col, char squares[8][8], bool white
     double score = 0.0;
     if (white) {
         score += king_eval[row][col];
+
+        // Bonus for pawn shield
+        if (row>1) { //prevent out of bounds lookup
+            if (!(col==0)) { //prevent out of bounds lookup
+                if (squares[row-1][col-1]=='P') {score += 0.5;} //front
+                if (squares[row][col-1]=='P') {score += 0.3;} //side
+                if (squares[row-2][col-1]=='P') {score += 0.4;} //ahead
+            } else if (!(col==7)) {
+                if (squares[row-1][col+1]=='P') {score += 0.5;} //front
+                if (squares[row][col+1]=='P') {score += 0.3;} //side
+                if (squares[row-2][col+1]=='P') {score += 0.4;} //ahead
+            }
+            if (squares[row-1][col]=='P') {score += 0.5;} //front
+            if (squares[row-2][col]=='P') {score += 0.4;} //ahead
+        }
     } else {
         score += king_eval[7-row][col];
+
+        // Bonus for pawn shield
+        if (row<6) { //prevent out of bounds lookup
+            if (!(col==0)) { //prevent out of bounds lookup
+                if (squares[row+1][col-1]=='p') {score += 0.5;} //front
+                if (squares[row][col-1]=='p') {score += 0.3;} //side
+                if (squares[row+2][col-1]=='p') {score += 0.4;} //ahead
+            } else if (!(col==7)) {
+                if (squares[row+1][col+1]=='p') {score += 0.5;} //front
+                if (squares[row][col+1]=='p') {score += 0.3;} //side
+                if (squares[row+2][col+1]=='p') {score += 0.4;} //ahead
+            }
+            if (squares[row+1][col]=='p') {score += 0.5;} //front
+            if (squares[row+2][col]=='p') {score += 0.4;} //ahead
+        }
     }
     return score;
-    //potentially add bonus for castling, safety evaluation. Add bonus near pawns
+    //safety evaluation
 }
