@@ -85,7 +85,7 @@ void test_evaluator() {
     score = Evaluator::evaluate(board2);
     assert(abs(score - (-1000.0)) < tolerance); // black wins
 
-    // Test random position
+    // Test random positions
     char board3[8][8] = {
         {'r', ' ', 'b', 'q', 'k', 'b', 'n', 'r'},
         {'p', 'p', 'p', ' ', 'p', 'p', 'p', 'p'},
@@ -99,6 +99,46 @@ void test_evaluator() {
 
     score = Evaluator::evaluate(board3);
     assert(abs(score - (-3.5)) < tolerance); // Expected score based on material and position
+
+    //Board 4, 5 and 6 are evaluated very badly by the evaluator. Position should be closer to -1.0
+    char board4[8][8] = {
+        {'r', ' ', 'q', ' ', 'k', ' ', ' ', 'r'},
+        {'p', 'p', 'p', ' ', 'n', 'p', 'p', 'p'},
+        {' ', ' ', 'n', 'p', 'b', ' ', ' ', ' '},
+        {' ', ' ', ' ', ' ', 'P', ' ', ' ', ' '},
+        {' ', ' ', 'P', ' ', ' ', ' ', ' ', ' '},
+        {' ', 'Q', 'P', ' ', ' ', ' ', 'P', 'N'},
+        {'P', 'P', ' ', ' ', 'P', ' ', 'B', 'P'},
+        {'R', ' ', 'B', ' ', 'K', ' ', ' ', 'R'}
+    };
+    score = Evaluator::evaluate(board4);
+    assert(abs(score - (-7.0)) < tolerance); // Expected score based on material and position
+
+    char board5[8][8] = {
+        {'r', ' ', ' ', ' ', 'k', ' ', ' ', 'r'},
+        {'p', 'p', 'p', ' ', 'n', 'p', 'p', 'p'},
+        {' ', ' ', 'n', 'p', ' ', ' ', ' ', ' '},
+        {' ', ' ', ' ', ' ', 'P', ' ', ' ', ' '},
+        {' ', ' ', 'P', ' ', ' ', ' ', ' ', ' '},
+        {' ', 'Q', 'P', ' ', ' ', ' ', 'P', 'q'},
+        {'P', 'P', ' ', ' ', 'P', ' ', ' ', 'P'},
+        {'R', ' ', 'B', ' ', 'K', ' ', ' ', 'R'}
+    };
+    score = Evaluator::evaluate(board5);
+    assert(abs(score - (-6.9)) < tolerance); // Expected score based on material and position
+
+    char board6[8][8] = {
+        {'r', ' ', 'q', ' ', ' ', 'r', 'k', ' '},
+        {'p', 'p', 'p', ' ', 'n', 'p', 'p', 'p'},
+        {' ', ' ', 'n', ' ', 'b', ' ', ' ', ' '},
+        {' ', ' ', ' ', ' ', 'p', ' ', ' ', ' '},
+        {' ', ' ', 'P', ' ', 'P', ' ', ' ', ' '},
+        {' ', 'Q', 'P', ' ', ' ', ' ', 'P', 'N'},
+        {'P', 'P', ' ', ' ', ' ', ' ', 'B', 'P'},
+        {'R', ' ', 'B', ' ', 'K', ' ', ' ', 'R'}
+    };
+    score = Evaluator::evaluate(board6);
+    assert(abs(score - (-11.5)) < tolerance); // Expected score based on material and position
 
     cout << "Evaluator tests passed!" << endl;
 }

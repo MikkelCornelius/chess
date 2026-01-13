@@ -4,11 +4,11 @@
 using namespace std;
 
 // compile with: g++ -std=c++20 -shared -fPIC -o chessbot.dll .\src\chess_bot.cpp .\src\board.cpp .\src\evaluator.cpp .\src\moveGenerator.cpp
-// for tests: g++ -std=c++20 -o chessbot.out chess_bot.cpp
 
 extern "C" const char* get_move(const char* board_str) {
     if (!board_str) return nullptr;
 
+    // Format input
     char squares[8][8];
     for (int i = 0; i < 8; ++i) {
         for (int j = 0; j < 8; ++j) {
@@ -21,11 +21,13 @@ extern "C" const char* get_move(const char* board_str) {
         castle_rights[i-65] = board_str[i]=='T';
     }
     char en_passant_rights_char = board_str[69];
-    int en_passant_rights = en_passant_rights_char - '0';
+    int en_passant_rights = en_passant_rights_char - '0'; //ASCII subtraction
 
+    // Run bot
     int depth = 4;
     Board board(&squares[0][0], string(), white_to_move, castle_rights, en_passant_rights, depth);
 
+    // Format output
     static string result_storage;
     double eval = board.get_evaluation();
     string formatted_eval = (eval<0) ? "-"+to_string(abs(eval)) : "+"+to_string(abs(eval));
