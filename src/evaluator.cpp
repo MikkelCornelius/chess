@@ -128,7 +128,8 @@ double Evaluator::evaluate_king(int row, int col, char squares[8][8], bool white
                 if (squares[row-1][col-1]=='P') {score += 0.5;} //front
                 if (squares[row][col-1]=='P') {score += 0.3;} //side
                 if (squares[row-2][col-1]=='P') {score += 0.4;} //ahead
-            } else if (!(col==7)) {
+            }
+            if (!(col==7)) {
                 if (squares[row-1][col+1]=='P') {score += 0.5;} //front
                 if (squares[row][col+1]=='P') {score += 0.3;} //side
                 if (squares[row-2][col+1]=='P') {score += 0.4;} //ahead
