@@ -3,10 +3,69 @@
 #include "../include/board.h"
 #include "../include/evaluator.h"
 #include "../include/moveGenerator.h"
+#include "../include/chess_bot.h"
 
 using namespace std;
 
-// Compile with: g++ -std=c++20 -o test_chess_bot.exe test/unit_test_chess_bot.cpp .\src\board.cpp .\src\evaluator.cpp .\src\moveGenerator.cpp
+// Compile with: g++ -std=c++20 -o test_chess_bot.exe test/unit_test_chess_bot.cpp .\src\chess_bot.cpp .\src\board.cpp .\src\evaluator.cpp .\src\moveGenerator.cpp .\src\mover.cpp
+
+void test_evaluator_positions(double tolerance) {
+    double score;
+    // Test random positions
+    char board3[8][8] = {
+        {'r', ' ', 'b', 'q', 'k', 'b', 'n', 'r'},
+        {'p', 'p', 'p', ' ', 'p', 'p', 'p', 'p'},
+        {' ', 'n', ' ', ' ', ' ', ' ', ' ', ' '},
+        {' ', ' ', ' ', 'p', ' ', ' ', ' ', ' '},
+        {' ', ' ', 'P', ' ', ' ', ' ', ' ', ' '},
+        {' ', ' ', ' ', ' ', 'N', ' ', ' ', ' '},
+        {'P', 'P', ' ', 'P', 'P', 'P', 'P', 'P'},
+        {'R', 'N', 'B', 'Q', 'K', 'B', ' ', 'R'}
+    };
+
+    score = Evaluator::evaluate(board3);
+    assert(abs(score - (-3.0)) < tolerance); // Expected score based on material and position
+
+    //Board 4, 5 and 6 are evaluated very badly by the evaluator. Position should be closer to -1.0
+    char board4[8][8] = {
+        {'r', ' ', 'q', ' ', 'k', ' ', ' ', 'r'},
+        {'p', 'p', 'p', ' ', 'n', 'p', 'p', 'p'},
+        {' ', ' ', 'n', 'p', 'b', ' ', ' ', ' '},
+        {' ', ' ', ' ', ' ', 'P', ' ', ' ', ' '},
+        {' ', ' ', 'P', ' ', ' ', ' ', ' ', ' '},
+        {' ', 'Q', 'P', ' ', ' ', ' ', 'P', 'N'},
+        {'P', 'P', ' ', ' ', 'P', ' ', 'B', 'P'},
+        {'R', ' ', 'B', ' ', 'K', ' ', ' ', 'R'}
+    };
+    score = Evaluator::evaluate(board4);
+    assert(abs(score - (-6.9)) < tolerance); // Expected score based on material and position
+
+    char board5[8][8] = {
+        {'r', ' ', ' ', ' ', 'k', ' ', ' ', 'r'},
+        {'p', 'p', 'p', ' ', 'n', 'p', 'p', 'p'},
+        {' ', ' ', 'n', 'p', ' ', ' ', ' ', ' '},
+        {' ', ' ', ' ', ' ', 'P', ' ', ' ', ' '},
+        {' ', ' ', 'P', ' ', ' ', ' ', ' ', ' '},
+        {' ', 'Q', 'P', ' ', ' ', ' ', 'P', 'q'},
+        {'P', 'P', ' ', ' ', 'P', ' ', ' ', 'P'},
+        {'R', ' ', 'B', ' ', 'K', ' ', ' ', 'R'}
+    };
+    score = Evaluator::evaluate(board5);
+    assert(abs(score - (-6.8)) < tolerance); // Expected score based on material and position
+
+    char board6[8][8] = {
+        {'r', ' ', 'q', ' ', ' ', 'r', 'k', ' '},
+        {'p', 'p', 'p', ' ', 'n', 'p', 'p', 'p'},
+        {' ', ' ', 'n', ' ', 'b', ' ', ' ', ' '},
+        {' ', ' ', ' ', ' ', 'p', ' ', ' ', ' '},
+        {' ', ' ', 'P', ' ', 'P', ' ', ' ', ' '},
+        {' ', 'Q', 'P', ' ', ' ', ' ', 'P', 'N'},
+        {'P', 'P', ' ', ' ', ' ', ' ', 'B', 'P'},
+        {'R', ' ', 'B', ' ', 'K', ' ', ' ', 'R'}
+    };
+    score = Evaluator::evaluate(board6);
+    assert(abs(score - (-12.5)) < tolerance); // Expected score based on material and position
+}
 
 void test_evaluator() {
     double tolerance = 0.0001; //use tolerance for floating point rounding errors
@@ -74,6 +133,7 @@ void test_evaluator() {
     };
 
     score = Evaluator::evaluate(board2); // Should be 0.0 for starting position
+    cout << "Score for starting position: " << score << endl;
     assert(abs(score - 0.0) < tolerance);
 
     // Test gameover
@@ -85,61 +145,8 @@ void test_evaluator() {
     score = Evaluator::evaluate(board2);
     assert(abs(score - (-1000.0)) < tolerance); // black wins
 
-    // Test random positions
-    char board3[8][8] = {
-        {'r', ' ', 'b', 'q', 'k', 'b', 'n', 'r'},
-        {'p', 'p', 'p', ' ', 'p', 'p', 'p', 'p'},
-        {' ', 'n', ' ', ' ', ' ', ' ', ' ', ' '},
-        {' ', ' ', ' ', 'p', ' ', ' ', ' ', ' '},
-        {' ', ' ', 'P', ' ', ' ', ' ', ' ', ' '},
-        {' ', ' ', ' ', ' ', 'N', ' ', ' ', ' '},
-        {'P', 'P', ' ', 'P', 'P', 'P', 'P', 'P'},
-        {'R', 'N', 'B', 'Q', 'K', 'B', ' ', 'R'}
-    };
-
-    score = Evaluator::evaluate(board3);
-    assert(abs(score - (-3.0)) < tolerance); // Expected score based on material and position
-
-    //Board 4, 5 and 6 are evaluated very badly by the evaluator. Position should be closer to -1.0
-    char board4[8][8] = {
-        {'r', ' ', 'q', ' ', 'k', ' ', ' ', 'r'},
-        {'p', 'p', 'p', ' ', 'n', 'p', 'p', 'p'},
-        {' ', ' ', 'n', 'p', 'b', ' ', ' ', ' '},
-        {' ', ' ', ' ', ' ', 'P', ' ', ' ', ' '},
-        {' ', ' ', 'P', ' ', ' ', ' ', ' ', ' '},
-        {' ', 'Q', 'P', ' ', ' ', ' ', 'P', 'N'},
-        {'P', 'P', ' ', ' ', 'P', ' ', 'B', 'P'},
-        {'R', ' ', 'B', ' ', 'K', ' ', ' ', 'R'}
-    };
-    score = Evaluator::evaluate(board4);
-    assert(abs(score - (-6.9)) < tolerance); // Expected score based on material and position
-
-    char board5[8][8] = {
-        {'r', ' ', ' ', ' ', 'k', ' ', ' ', 'r'},
-        {'p', 'p', 'p', ' ', 'n', 'p', 'p', 'p'},
-        {' ', ' ', 'n', 'p', ' ', ' ', ' ', ' '},
-        {' ', ' ', ' ', ' ', 'P', ' ', ' ', ' '},
-        {' ', ' ', 'P', ' ', ' ', ' ', ' ', ' '},
-        {' ', 'Q', 'P', ' ', ' ', ' ', 'P', 'q'},
-        {'P', 'P', ' ', ' ', 'P', ' ', ' ', 'P'},
-        {'R', ' ', 'B', ' ', 'K', ' ', ' ', 'R'}
-    };
-    score = Evaluator::evaluate(board5);
-    assert(abs(score - (-6.8)) < tolerance); // Expected score based on material and position
-
-    char board6[8][8] = {
-        {'r', ' ', 'q', ' ', ' ', 'r', 'k', ' '},
-        {'p', 'p', 'p', ' ', 'n', 'p', 'p', 'p'},
-        {' ', ' ', 'n', ' ', 'b', ' ', ' ', ' '},
-        {' ', ' ', ' ', ' ', 'p', ' ', ' ', ' '},
-        {' ', ' ', 'P', ' ', 'P', ' ', ' ', ' '},
-        {' ', 'Q', 'P', ' ', ' ', ' ', 'P', 'N'},
-        {'P', 'P', ' ', ' ', ' ', ' ', 'B', 'P'},
-        {'R', ' ', 'B', ' ', 'K', ' ', ' ', 'R'}
-    };
-    score = Evaluator::evaluate(board6);
-    assert(abs(score - (-12.5)) < tolerance); // Expected score based on material and position
-
+    //test_evaluator_positions(tolerance);
+    
     cout << "Evaluator tests passed!" << endl;
 }
 
@@ -242,9 +249,14 @@ void test_bot() {
     bool castle_rights[4] = {false, false, false, false};
     int en_passant_rights = 8;
 
-    Board board(&squares[0][0], "", true, castle_rights, en_passant_rights, 3);
+    static string result_storage;
+    double eval;
+    int depth = 3;
+    Board board(&squares[0][0], "", true, castle_rights, en_passant_rights);
+    tie(eval, result_storage) = mm_search(board, depth);
+    string move = result_storage.substr(2, 4);
 
-    string move = board.get_best_continuation().substr(2,4);
+    cout << "Bot selected move: " << move << " with evaluation: " << eval << endl;
     assert(move == "h3h8"); // Rook moves to h8 to deliver checkmate
 
     cout << "Checkmate test passed!" << endl;

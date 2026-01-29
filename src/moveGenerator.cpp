@@ -11,7 +11,7 @@ string black_pieces = "pnbrqk";
 int knight_moves[8][2] = {{-2, -1}, {-2, 1}, {-1, -2}, {-1, 2},
                             {1, -2}, {1, 2}, {2, -1}, {2, 1}};
 
-forward_list<string> MoveGenerator::generate_all_moves(char squares[8][8], bool white_to_move, bool castle_rights[4], int en_passant_rights) {
+forward_list<string> MoveGenerator::generate_all_moves(char (&squares)[8][8], bool white_to_move, bool (&castle_rights)[4], int en_passant_rights) {
     forward_list<string> moves;
     bool white_king_alive = false;
     bool black_king_alive = false;

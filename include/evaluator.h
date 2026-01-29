@@ -54,14 +54,14 @@ private:
         { 2.0, 3.0, 2.0, 0.0, 0.0, 1.0, 3.0, 2.0}
     };
 public:
-    static double evaluate(char squares[8][8]);
-    static double evaluate_pawn_structure(char squares[8][8]);
-    static double evaluate_pawn(int row, int col, char squares[8][8], bool white);
-    static double evaluate_knight(int row, int col, char squares[8][8]);
-    static double evaluate_bishop(int row, int col, char squares[8][8]);
-    static double evaluate_rook(int row, int col, char squares[8][8]);
-    static double evaluate_queen(int row, int col, char squares[8][8], bool white);
-    static double evaluate_king(int row, int col, char squares[8][8], bool white);
+    static double evaluate(char (&squares)[8][8]);
+    static double evaluate_pawn_structure(char (&squares)[8][8]);
+    static double evaluate_pawn(int row, int col, char (&squares)[8][8], bool white);
+    static double evaluate_knight(int row, int col, char (&squares)[8][8]);
+    static double evaluate_bishop(int row, int col, char (&squares)[8][8]);
+    static double evaluate_rook(int row, int col, char (&squares)[8][8]);
+    static double evaluate_queen(int row, int col, char (&squares)[8][8], bool white);
+    static double evaluate_king(int row, int col, char (&squares)[8][8], bool white);
 };
 
 #endif

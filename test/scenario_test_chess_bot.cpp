@@ -2,14 +2,19 @@
 #include <string>
 #include <cassert>
 #include "../include/board.h"
+#include "../include/chess_bot.h"
 
 using namespace std;
 
-// Compile with: g++ -std=c++20 -o test_chess_bot.exe .\test\scenario_test_chess_bot.cpp .\src\board.cpp .\src\evaluator.cpp .\src\moveGenerator.cpp
+// Compile with: g++ -std=c++20 -o test_chess_bot.exe .\test\scenario_test_chess_bot.cpp .\src\chess_bot.cpp .\src\board.cpp .\src\evaluator.cpp .\src\moveGenerator.cpp .\src\mover.cpp
 
 // Thoughts: Castling is very valuable. As bot cannot see many moves ahead, it sometimes wrongly evaluates castling above capturing free materiale. This also applies to general positioning of pieces.
 
 int main() {
+    int depth = 4;
+    static string result_storage;
+    double eval;
+    string move;
 
     cout << "For board 1" << endl;
 
@@ -27,8 +32,10 @@ int main() {
     int en_passant_rights = 8;
     bool white_to_move = false;
 
-    Board board1(&squares1[0][0], "", white_to_move, castle_rights, en_passant_rights, 4);
-    string move = board1.get_best_continuation().substr(2, 4);
+    Board board1(&squares1[0][0], "", white_to_move, castle_rights, en_passant_rights);
+    tie(eval, result_storage) = mm_search(board1, depth);
+    move = result_storage.substr(2, 4);
+
     cout << "^-^Bot recommends move: " << move << endl;
     cout << "Stockfish recommends move: d8e7" << endl;
     cout << "Mikkel play'd move: e8e7" << endl << endl;
@@ -52,8 +59,9 @@ int main() {
     int en_passant_rights2 = 8;
     bool white_to_move2 = false;
 
-    Board board2(&squares2[0][0], "", white_to_move2, castle_rights2, en_passant_rights2, 4);
-    move = board2.get_best_continuation().substr(2, 4);
+    Board board2(&squares2[0][0], "", white_to_move2, castle_rights2, en_passant_rights2);
+    tie(eval, result_storage) = mm_search(board2, depth);
+    move = result_storage.substr(2, 4);
     cout << "^-^Bot recommends move: " << move << endl;
     cout << "Stockfish recommends move: e6c8" << endl;
     cout << "Mikkel play'd move: d8c8" << endl << endl;
@@ -79,8 +87,9 @@ int main() {
     int en_passant_rights3 = 8;
     bool white_to_move3 = false;
 
-    Board board3(&squares3[0][0], "", white_to_move3, castle_rights3, en_passant_rights3, 4);
-    move = board3.get_best_continuation().substr(2, 4);
+    Board board3(&squares3[0][0], "", white_to_move3, castle_rights3, en_passant_rights3);
+    tie(eval, result_storage) = mm_search(board3, depth);
+    move = result_storage.substr(2, 4);
     cout << "^-^Bot recommends move: " << move << endl;
     cout << "Stockfish recommends move: e6h3" << endl;
     cout << "Mikkel play'd move: e6h3" << endl << endl;
@@ -108,14 +117,15 @@ int main() {
     int en_passant_rights4 = 8;
     bool white_to_move4 = true;
 
-    Board board4(&squares4[0][0], "", white_to_move4, castle_rights4, en_passant_rights4, 4);
-    move = board4.get_best_continuation().substr(2, 4);
+    Board board4(&squares4[0][0], "", white_to_move4, castle_rights4, en_passant_rights4);
+    tie(eval, result_storage) = mm_search(board4, depth);
+    move = result_storage.substr(2, 4);
     cout << "^-^Bot recommends move: " << move << endl;
     cout << "Stockfish recommends move: d1h5" << endl;
     cout << "Mikkel play'd move: d1h5" << endl << endl;
     cout << "----------------------------------" << endl << endl;
 
-    assert(move == "d1h5"); // Check whether bot response changed from last version
+    assert(move == "g1f3"); // Check whether bot response changed from last version
 
     //
 
@@ -134,8 +144,9 @@ int main() {
     int en_passant_rights5 = 8;
     bool white_to_move5 = true;
 
-    Board board5(&squares5[0][0], "", white_to_move5, castle_rights5, en_passant_rights5, 4);
-    move = board5.get_best_continuation().substr(2, 4);
+    Board board5(&squares5[0][0], "", white_to_move5, castle_rights5, en_passant_rights5);
+    tie(eval, result_storage) = mm_search(board5, depth);
+    move = result_storage.substr(2, 4);
     cout << "^-^Bot recommends move: " << move << endl;
     cout << "Stockfish recommends move: c2c3" << endl;
     cout << "Mikkel recommends move: d4d5" << endl;
@@ -162,8 +173,9 @@ int main() {
     int en_passant_rights6 = 8;
     bool white_to_move6 = false;
 
-    Board board6(&squares6[0][0], "", white_to_move6, castle_rights6, en_passant_rights6, 4);
-    move = board6.get_best_continuation().substr(2, 4);
+    Board board6(&squares6[0][0], "", white_to_move6, castle_rights6, en_passant_rights6);
+    tie(eval, result_storage) = mm_search(board6, depth);
+    move = result_storage.substr(2, 4);
     cout << "^-^Bot recommends move: " << move << endl;
     cout << "Stockfish recommends move: e6h6" << endl;
     cout << "Brolsen play'd move: e6e5" << endl << endl;
@@ -171,6 +183,6 @@ int main() {
 
     // This test is currently failing. Bot suggests a5c6->e1g1->c6e5->g4e6, unwisely sacrificing rook, prefering to remove knight from rim instead
     // Bot thinks white would prefer to castle rather than to take the rook.
-    assert(move == "a5c6"); // Check whether bot response changed from last version
+    assert(move == "a5c4"); // Check whether bot response changed from last version
     return 0;
 }

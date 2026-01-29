@@ -1,6 +1,6 @@
 #include "../include/evaluator.h"
 
-double Evaluator::evaluate(char squares[8][8]) {
+double Evaluator::evaluate(char (&squares)[8][8]) { //master function
     bool w_king_alive = false;
     bool b_king_alive = false;
     double score = 0.0;
@@ -24,12 +24,13 @@ double Evaluator::evaluate(char squares[8][8]) {
         }
     }
 
+    // Ignore all evaluation if checkmate continuation is found
     if (!w_king_alive) {return -1000.0;}
     else if (!b_king_alive) {return 1000.0;}
     else {return score;}
 }
 
-double Evaluator::evaluate_pawn_structure(char squares[8][8]) {
+double Evaluator::evaluate_pawn_structure(char (&squares)[8][8]) {
     double score = 0.0;
 
     // Check for at least one safe castle space
@@ -57,7 +58,7 @@ double Evaluator::evaluate_pawn_structure(char squares[8][8]) {
     return score;
 }
 
-double Evaluator::evaluate_pawn(int row, int col, char squares[8][8], bool white) {
+double Evaluator::evaluate_pawn(int row, int col, char (&squares)[8][8], bool white) {
     double score = 1.0;
     if (white) {
         score += pawn_eval[row][col];
@@ -69,21 +70,21 @@ double Evaluator::evaluate_pawn(int row, int col, char squares[8][8], bool white
     //add pawn chains, passed pawns(plus rook behind), doubled pawns, isolated pawns.
 }
 
-double Evaluator::evaluate_knight(int row, int col, char squares[8][8]) {
+double Evaluator::evaluate_knight(int row, int col, char (&squares)[8][8]) {
     double score = 3.0;
     score += knight_eval[row][col];
     return score;
     //potentially add bonus for protecting other minor pieces
 }
 
-double Evaluator::evaluate_bishop(int row, int col, char squares[8][8]) {
+double Evaluator::evaluate_bishop(int row, int col, char (&squares)[8][8]) {
     double score = 3.0;
     score += bishop_eval[row][col];
     return score;
     //potentially add bonus for controlling long diagonals
 }
 
-double Evaluator::evaluate_rook(int row, int col, char squares[8][8]) {
+double Evaluator::evaluate_rook(int row, int col, char (&squares)[8][8]) {
     double score = 4.0;
     
     // Evaluate on number of controled squares
@@ -107,7 +108,7 @@ double Evaluator::evaluate_rook(int row, int col, char squares[8][8]) {
     return score;
 }
 
-double Evaluator::evaluate_queen(int row, int col, char squares[8][8], bool white) {
+double Evaluator::evaluate_queen(int row, int col, char (&squares)[8][8], bool white) {
     double score = 9.0;
     if (white) {
         score += queen_eval[row][col];
@@ -117,7 +118,7 @@ double Evaluator::evaluate_queen(int row, int col, char squares[8][8], bool whit
     return score;
 }
 
-double Evaluator::evaluate_king(int row, int col, char squares[8][8], bool white) {
+double Evaluator::evaluate_king(int row, int col, char (&squares)[8][8], bool white) {
     double score = 0.0;
     if (white) {
         score += king_eval[row][col];
